@@ -1,0 +1,965 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>勞報單填寫</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@600;700;900&display=swap">
+<style>
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0}
+img{max-width:100%}
+[hidden]{display:none!important}
+/* Layout: 單據清單 | 填寫表單 | A4 即時預覽；窄螢幕切換「填寫／預覽」 */
+:root{
+  --bg:#eceff2; --surface:#ffffff; --surface-2:#f5f7f9; --ink:#18202b; --muted:#5b6574;
+  --line:#d3d9e0; --accent:#b8321f; --accent-soft:#f6e3df; --accent-ink:#ffffff;
+  --ok:#2c7149; --ok-soft:#e0efe6; --warn:#8a5a00; --warn-soft:#f6ecd6; --info:#2d5a8a; --info-soft:#e2ebf5;
+  --focus:#2d5a8a;
+  --sh-bg:#ffffff; --sh-ink:#121212; --sh-line:#2b2b2b; --sh-soft:#f1f1ee; --sh-muted:#555555; --sh-red:#a8261b;
+  --f-display:"Noto Serif TC","Songti TC","PMingLiU",serif;
+  --f-body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --f-num:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#12161c; --surface:#1a1f27; --surface-2:#151a21; --ink:#e6e9ee; --muted:#9aa3b0;
+  --line:#2d343e; --accent:#e2664f; --accent-soft:#3a2420; --accent-ink:#1a0f0d;
+  --ok:#6cc08f; --ok-soft:#1d3327; --warn:#e0b25a; --warn-soft:#3a2f18; --info:#86b2e0; --info-soft:#1c2a3b; --focus:#86b2e0;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#12161c; --surface:#1a1f27; --surface-2:#151a21; --ink:#e6e9ee; --muted:#9aa3b0;
+  --line:#2d343e; --accent:#e2664f; --accent-soft:#3a2420; --accent-ink:#1a0f0d;
+  --ok:#6cc08f; --ok-soft:#1d3327; --warn:#e0b25a; --warn-soft:#3a2f18; --info:#86b2e0; --info-soft:#1c2a3b; --focus:#86b2e0;
+  color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:14px;line-height:1.55}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--surface);border-bottom:1px solid var(--line);
+  padding-block:10px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--surface)}
+.brand{display:flex;align-items:center;gap:10px;margin-right:auto;min-width:0}
+.seal{width:34px;height:34px;border:2px solid var(--accent);color:var(--accent);border-radius:6px;display:grid;place-items:center;
+  font-family:var(--f-display);font-weight:900;font-size:13px;line-height:1;letter-spacing:0;transform:rotate(-4deg);flex:none}
+.brand h1{font-family:var(--f-display);font-weight:700;font-size:19px;margin:0;letter-spacing:.06em;white-space:nowrap}
+.sync{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px;white-space:nowrap}
+.sync i{width:7px;height:7px;border-radius:50%;background:var(--muted);display:inline-block}
+.sync[data-s="saved"] i{background:var(--ok)} .sync[data-s="saving"] i{background:var(--warn)} .sync[data-s="error"] i{background:var(--accent)}
+.actions{display:flex;flex-wrap:wrap;gap:8px}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:7px 12px;cursor:pointer;font-weight:500;white-space:nowrap}
+.btn:hover{background:var(--surface-2)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.primary:hover{filter:brightness(1.06)}
+.btn.danger{color:var(--accent)}
+.btn.danger.armed{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn:disabled{opacity:.55;cursor:progress}
+.btn.sm{padding:5px 10px;font-size:13px}
+
+.layout{display:grid;grid-template-columns:250px minmax(0,1fr) minmax(0,520px);gap:16px;align-items:start;
+  padding-block:16px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.list{position:sticky;top:calc(env(safe-area-inset-top,0px) + 72px);display:flex;flex-direction:column;gap:10px;min-width:0}
+.list .search{width:100%;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:7px 10px}
+.items{display:flex;flex-direction:column;gap:6px;max-height:calc(100vh - 200px);overflow:auto;padding-right:2px}
+.item{text-align:left;border:1px solid transparent;background:transparent;border-radius:8px;padding:8px 10px;cursor:pointer;display:grid;gap:2px}
+.item:hover{background:var(--surface)}
+.item.on{background:var(--surface);border-color:var(--line);box-shadow:inset 3px 0 0 var(--accent)}
+.item .r1{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.item .nm{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.item .r2{font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.item .amt{font-family:var(--f-num);font-size:12px;font-variant-numeric:tabular-nums}
+.chip{font-size:11px;padding:1px 7px;border-radius:99px;white-space:nowrap;font-weight:500}
+.chip.draft{background:var(--warn-soft);color:var(--warn)} .chip.signed{background:var(--info-soft);color:var(--info)}
+.chip.paid{background:var(--ok-soft);color:var(--ok)} .chip.ex{background:var(--surface-2);color:var(--muted);border:1px dashed var(--line)}
+.picker{display:none;gap:8px;align-items:center;width:100%}
+.picker select{flex:1;min-width:0;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:7px 8px}
+
+.editor{display:flex;flex-direction:column;gap:14px;min-width:0}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;min-width:0}
+.card h2{font-size:13px;letter-spacing:.12em;color:var(--muted);margin:0 0 12px;font-weight:700;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 12px}
+.f{display:flex;flex-direction:column;gap:4px;min-width:0}
+.f.wide{grid-column:1/-1}
+.f label{font-size:12px;color:var(--muted);font-weight:500}
+.f input,.f select,.f textarea{width:100%;border:1px solid var(--line);background:var(--surface-2);border-radius:7px;padding:7px 9px;min-width:0}
+.f textarea{min-height:64px;resize:vertical}
+.f input[type="number"]{font-family:var(--f-num);font-variant-numeric:tabular-nums}
+.chk{display:flex;gap:8px;align-items:flex-start;font-size:13px;grid-column:1/-1;cursor:pointer}
+.chk input{margin-top:4px}
+.hint{font-size:12px;color:var(--muted);margin:6px 0 0}
+body:not([data-role="owner"]) .owner-only{display:none!important}
+body:not([data-role="external"]) .ext-only{display:none!important}
+.guide{border-color:var(--info);background:var(--info-soft)}
+.guide ol{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px}
+.guide h2{color:var(--info)}
+.role{font-size:11px;padding:2px 8px;border-radius:99px;background:var(--info-soft);color:var(--info);white-space:nowrap;font-weight:500}
+.share{font-size:12px;color:var(--muted);border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:6px;align-items:flex-start}
+.share b{color:var(--ink);font-size:13px}
+.item .by{color:var(--info)}
+.inapp{margin:12px max(16px,env(safe-area-inset-right,0px)) 0 max(16px,env(safe-area-inset-left,0px));font-size:13px;background:var(--warn-soft);color:var(--warn);border-radius:8px;padding:9px 12px}
+details.card>summary{cursor:pointer;font-size:13px;letter-spacing:.12em;color:var(--muted);font-weight:700;list-style:none;display:flex;justify-content:space-between}
+details.card>summary::after{content:"展開";font-weight:500;letter-spacing:0}
+details.card[open]>summary::after{content:"收合"}
+details.card[open]>summary{margin-bottom:12px}
+
+.sum{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-top:12px}
+.sum div{padding:9px 10px;border-right:1px solid var(--line);min-width:0}
+.sum div:last-child{border-right:0;background:var(--accent-soft)}
+.sum small{display:block;font-size:11px;color:var(--muted)}
+.sum b{font-family:var(--f-num);font-variant-numeric:tabular-nums;font-size:16px;font-weight:600;white-space:nowrap}
+.sum div:last-child b{color:var(--accent)}
+.rule{font-size:12px;color:var(--muted);margin-top:8px}
+
+.sig{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.sigbox{width:220px;max-width:100%;height:84px;border:1px dashed var(--line);border-radius:8px;display:grid;place-items:center;background:var(--sh-bg);color:var(--sh-muted);font-size:12px}
+.sigbox img{max-width:92%;max-height:76px}
+.att{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.att .slot{border:1px dashed var(--line);border-radius:8px;padding:8px;display:flex;flex-direction:column;gap:6px;align-items:center;text-align:center;font-size:12px;color:var(--muted);min-width:0}
+.att .thumb{width:100%;aspect-ratio:1.58;max-width:100%;background:var(--surface-2);border-radius:6px;display:grid;place-items:center;overflow:hidden}
+.att .thumb img{width:100%;height:100%;object-fit:cover}
+.att .row{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+.att input[type=file]{position:absolute;width:1px;height:1px;opacity:0}
+
+.preview{position:sticky;top:calc(env(safe-area-inset-top,0px) + 72px);min-width:0;display:flex;flex-direction:column;gap:8px}
+.pv-head{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--muted)}
+.pv-scroll{max-height:calc(100vh - 130px);overflow:auto;display:flex;flex-direction:column;gap:12px;border-radius:6px}
+.pv-page{position:relative;overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,.12),0 8px 24px rgba(0,0,0,.08);flex:none;max-width:100%}
+.pv-page .sheet{transform-origin:0 0;position:absolute;left:0;top:0}
+.tabs{display:none;border:1px solid var(--line);border-radius:9px;overflow:hidden;background:var(--surface)}
+.tabs button{border:0;background:transparent;padding:7px 16px;cursor:pointer;font-weight:500}
+.tabs button[aria-selected="true"]{background:var(--ink);color:var(--surface)}
+
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--surface);
+  padding:9px 16px;border-radius:8px;font-size:13px;z-index:60;max-width:calc(100% - 32px)}
+
+.modal{position:fixed;inset:0;z-index:50;background:rgba(10,12,16,.55);display:grid;place-items:center;
+  padding:calc(16px + env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) calc(16px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.modal .box{background:var(--surface);border-radius:12px;width:min(720px,100%);max-height:100%;overflow:auto;padding:20px;display:flex;flex-direction:column;gap:12px}
+.modal h3{font-family:var(--f-display);font-size:20px;margin:0;letter-spacing:.05em}
+.modal .facts{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:14px}
+.modal .facts dt{color:var(--muted)} .modal .facts dd{margin:0;font-weight:500}
+.modal .facts .num{font-family:var(--f-num);font-variant-numeric:tabular-nums}
+.modal .decl{font-size:13px;background:var(--surface-2);border-radius:8px;padding:10px 12px;margin:0}
+.pad{position:relative;height:230px;border:1px solid var(--line);border-radius:10px;background:var(--sh-bg);touch-action:none}
+.pad canvas{width:100%;height:100%;display:block;border-radius:10px;cursor:crosshair}
+.pad .base{position:absolute;left:24px;right:24px;bottom:52px;border-bottom:1px solid #c9c9c9;pointer-events:none}
+.pad .ph{position:absolute;left:26px;bottom:58px;color:#9a9a9a;font-size:13px;pointer-events:none}
+.modal .row{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+.modal textarea{width:100%;border:1px solid var(--line);background:var(--surface-2);border-radius:8px;padding:8px;font-family:var(--f-num);font-size:12px;word-break:break-all;resize:vertical}
+.modal .steps{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:2px;font-size:14px}
+.modal .warn{margin:0;font-size:13px;background:var(--warn-soft);color:var(--warn);border-radius:8px;padding:8px 10px}
+.rimg{font-size:12px;color:var(--muted)}
+.rimg{display:flex;flex-direction:column;gap:10px}
+.rimg img{width:100%;border:1px solid var(--line);border-radius:6px;display:block}
+
+#render-host{position:fixed;left:-14000px;top:0;width:794px;pointer-events:none}
+
+/* ===== A4 單據（固定紙張色，不隨主題） ===== */
+.sheet{width:794px;height:1123px;background:var(--sh-bg);color:var(--sh-ink);padding:52px 56px 44px;font-family:var(--f-body);font-size:13px;line-height:1.5;display:flex;flex-direction:column;gap:14px}
+.sheet .hd{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:3px double var(--sh-line);padding-bottom:12px}
+.sheet .org{font-size:13px;color:var(--sh-muted);margin-bottom:2px}
+.sheet .ttl{font-family:var(--f-display);font-weight:900;font-size:32px;letter-spacing:.32em;margin:0;line-height:1.2}
+.sheet .meta{border-collapse:collapse;font-size:12px}
+.sheet .meta th{text-align:right;font-weight:500;color:var(--sh-muted);padding:1px 8px 1px 0;white-space:nowrap}
+.sheet .meta td{font-family:var(--f-num);font-weight:500;white-space:nowrap}
+.sheet table.t{width:100%;border-collapse:collapse;table-layout:fixed}
+.sheet .t th,.sheet .t td{border:1px solid var(--sh-line);padding:6px 8px;vertical-align:middle;word-break:break-all}
+.sheet .t th{background:var(--sh-soft);font-weight:500;width:96px;text-align:center;font-size:12px}
+.sheet .t .sec th{background:var(--sh-ink);color:var(--sh-bg);text-align:left;letter-spacing:.2em;font-weight:700;padding:4px 8px;width:auto}
+.sheet .t td{height:32px}
+.sheet .n{font-family:var(--f-num);font-variant-numeric:tabular-nums}
+.sheet .money th{width:auto}
+.sheet .money td{text-align:right;font-size:15px;font-family:var(--f-num);font-weight:600;height:38px}
+.sheet .money td.net{color:var(--sh-red);font-size:17px}
+.sheet .money .up td{text-align:left;font-family:var(--f-display);font-size:15px;font-weight:700;letter-spacing:.06em;color:var(--sh-ink)}
+.sheet .decl{font-size:12px;border:1px solid var(--sh-line);padding:8px 10px;margin:0;color:var(--sh-ink)}
+.sheet .signrow{display:flex;gap:0;border:1px solid var(--sh-line)}
+.sheet .signrow .lb{width:96px;background:var(--sh-soft);display:grid;place-items:center;font-size:12px;border-right:1px solid var(--sh-line);text-align:center;padding:4px}
+.sheet .signrow .sg{flex:1;height:96px;display:grid;place-items:center;border-right:1px solid var(--sh-line)}
+.sheet .signrow .sg img{max-height:86px;max-width:92%}
+.sheet .signrow .sg .empty{color:#9a9a9a;font-size:12px}
+.sheet .signrow .dt{width:170px;display:grid;place-items:center;font-family:var(--f-num);font-size:13px}
+.sheet .stamps{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--sh-line);margin-top:auto}
+.sheet .stamps div{border-right:1px solid var(--sh-line);height:84px;font-size:11px;color:var(--sh-muted);padding:4px 8px}
+.sheet .stamps div:last-child{border-right:0}
+.sheet .foot{display:flex;justify-content:space-between;font-size:10px;color:var(--sh-muted)}
+.sheet .exmark{position:absolute;right:56px;top:20px;border:2px solid var(--sh-red);color:var(--sh-red);font-weight:700;font-size:12px;padding:1px 8px;transform:rotate(3deg)}
+.sheet .atts{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.sheet .atts figure{margin:0;border:1px solid var(--sh-line);padding:8px;display:flex;flex-direction:column;gap:6px}
+.sheet .atts figure.full{grid-column:1/-1}
+.sheet .atts img{width:100%;height:260px;object-fit:contain;background:var(--sh-soft)}
+.sheet .atts figcaption{font-size:12px;color:var(--sh-muted);text-align:center}
+
+@media (max-width:1180px){
+  .layout{grid-template-columns:minmax(0,1fr) minmax(0,440px)}
+  .list{display:none}
+  .picker{display:flex}
+}
+@media (max-width:860px){
+  .layout{grid-template-columns:minmax(0,1fr)}
+  .tabs{display:inline-flex}
+  .layout[data-tab="edit"] .preview{display:none}
+  .layout[data-tab="view"] .editor{display:none}
+  .preview{position:static}
+  .pv-scroll{max-height:none}
+}
+@media (max-width:520px){
+  .grid{grid-template-columns:minmax(0,1fr)}
+  .sum{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .sum div:nth-child(2){border-right:0}
+  .sum div:nth-child(-n+2){border-bottom:1px solid var(--line)}
+  .att{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .brand h1{font-size:17px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+</head>
+<body>
+<header class="bar">
+  <div class="brand"><div class="seal">勞報</div><h1>勞報單填寫</h1>
+    <span class="sync" id="sync" data-s="idle"><i></i><span>連線中…</span></span><span class="role" id="role" hidden></span></div>
+  <div class="tabs" role="tablist">
+    <button id="tab-edit" role="tab" aria-selected="true">填寫</button>
+    <button id="tab-view" role="tab" aria-selected="false">預覽</button>
+  </div>
+  <div class="actions">
+    <button class="btn" id="btn-dup" title="保留所得人與帳戶，開一張新單">複製成新單</button>
+    <button class="btn danger" id="btn-del">刪除</button>
+    <button class="btn owner-only" id="btn-import" title="匯入外部助理回傳的回傳碼或 PDF">匯入回傳</button><input type="file" id="imp" accept="application/pdf,.pdf" hidden>
+    <button class="btn primary" id="btn-pdf">匯出 PDF</button>
+  </div>
+  <div class="picker"><select id="pick" aria-label="選擇勞報單"></select><button class="btn" id="btn-new2">＋ 新增</button></div>
+</header>
+
+<div class="inapp" id="inapp" hidden>你正在 LINE 裡開啟。建議點右上角「⋯」選「用預設瀏覽器開啟」，匯出 PDF 會比較順利。</div>
+<main class="layout" id="layout" data-tab="edit">
+  <aside class="list">
+    <button class="btn primary" id="btn-new">＋ 新增勞報單</button>
+    <input class="search" id="q" placeholder="搜尋姓名或案件" aria-label="搜尋">
+    <div class="share owner-only" id="share-tip"><b>讓助理來填單</b>用「分享」開啟「知道連結的人可檢視」，把連結傳給助理。外部助理填完會匯出 PDF 傳給你，按上方「匯入回傳的 PDF」就會收進清單。同組織成員設為「參與者」則會直接存到你這裡。<button class="btn sm" id="btn-reload">重新載入全部的單</button></div>
+    <div class="items" id="items"></div>
+  </aside>
+
+  <section class="editor" id="editor"></section>
+
+  <section class="preview">
+    <div class="pv-head"><span>A4 預覽（匯出 PDF 即為此樣式）</span><span id="pv-pages"></span></div>
+    <div class="pv-scroll" id="pv"></div>
+  </section>
+</main>
+
+<div class="modal" id="modal" hidden>
+  <div class="box" role="dialog" aria-modal="true" aria-labelledby="m-title">
+    <h3 id="m-title">所得人簽名確認</h3>
+    <dl class="facts" id="m-facts"></dl>
+    <p class="decl" id="m-decl"></p>
+    <div class="pad" id="pad"><canvas id="padc"></canvas><div class="base"></div><div class="ph" id="pad-ph">請在此處簽名</div></div>
+    <div class="row">
+      <button class="btn" id="m-clear">清除重簽</button>
+      <button class="btn" id="m-cancel">取消</button>
+      <button class="btn primary" id="m-ok">確認簽署</button>
+    </div>
+  </div>
+</div>
+<div class="modal" id="rmodal" hidden>
+  <div class="box" role="dialog" aria-modal="true" aria-labelledby="r-title">
+    <h3 id="r-title">回傳給 <span id="r-payer">給付單位</span></h3>
+    <p class="hint" style="margin:0">這個畫面無法直接存成 PDF 檔，請改用「回傳碼」回傳：</p>
+    <ol class="steps"><li>按「複製回傳碼」。</li><li>貼到 LINE 或 Email 傳給對方。對方匯入後，就會收到你填的內容和簽名。</li><li>長按下方每一張圖片「儲存」，再一起傳給對方。有上傳證件照片的話，會在第 2 張圖。</li></ol>
+    <p class="warn" id="r-warn" hidden>這張單的簽名是更新前簽的，無法放進回傳碼。請關閉後清除簽名、重新簽一次。</p>
+    <textarea id="r-code" readonly rows="3" aria-label="回傳碼"></textarea><span class="hint" id="r-len" style="margin:-6px 0 0"></span>
+    <div class="row"><button class="btn" id="r-close">關閉</button><button class="btn primary" id="r-copy">複製回傳碼</button></div>
+    <p class="hint" style="margin:0">單據與附件圖片（長按即可儲存）：</p>
+    <div id="r-img" class="rimg">產生中…</div>
+  </div>
+</div>
+<div class="modal" id="imodal" hidden>
+  <div class="box" role="dialog" aria-modal="true" aria-labelledby="i-title">
+    <h3 id="i-title">匯入回傳的勞報單</h3>
+    <p class="hint" style="margin:0">把助理傳來的整段訊息貼在下面（含「LB3」開頭的回傳碼即可），或選擇助理回傳的 PDF 檔。</p>
+    <textarea id="i-code" rows="5" placeholder="在這裡貼上回傳碼" aria-label="貼上回傳碼"></textarea>
+    <div class="row"><button class="btn" id="i-pdf">改選 PDF 檔</button><button class="btn" id="i-close">取消</button><button class="btn primary" id="i-ok">匯入</button></div>
+  </div>
+</div>
+<div class="modal" id="pmodal" hidden>
+  <div class="box" role="dialog" aria-modal="true" aria-labelledby="p-title">
+    <h3 id="p-title">PDF 已完成</h3>
+    <p class="hint" style="margin:0" id="p-name"></p>
+    <ol class="steps"><li>按「傳到 LINE／Email」，選擇要傳的對象。</li><li>沒有出現分享選項的話，按「下載 PDF」，再從手機的檔案裡傳出去。</li></ol>
+    <div class="row"><button class="btn" id="p-close">關閉</button><button class="btn" id="p-code">改用回傳碼</button><button class="btn" id="p-dl">下載 PDF</button><button class="btn primary" id="p-share">傳到 LINE／Email</button></div>
+  </div>
+</div>
+<div id="render-host" aria-hidden="true"></div>
+<div class="toast" id="toast" hidden></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+(function(){
+'use strict';
+const $=s=>document.querySelector(s);
+const esc=v=>String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt=n=>(Math.round(+n||0)).toLocaleString('zh-TW');
+const pad2=n=>String(n).padStart(2,'0');
+const today=()=>{const d=new Date();return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate())};
+const uid=()=>'s-'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const getP=(o,p)=>p.split('.').reduce((a,k)=>a==null?a:a[k],o);
+const setP=(o,p,v)=>{const ks=p.split('.');let a=o;ks.slice(0,-1).forEach(k=>{if(a[k]==null||typeof a[k]!=='object')a[k]={};a=a[k]});a[ks[ks.length-1]]=v};
+const clone=o=>JSON.parse(JSON.stringify(o));
+
+/* ---------- 扣繳規則（115年／2026，可在設定中修改） ---------- */
+const DEFAULT_RATES={nhiRate:2.11,nhiMinBiz:20000,nhiMinWage:29500,taxBiz:10,taxBizOver:20000,taxWage:5,taxWageMin:90501,nrBiz:20,nrRoyaltyOver:5000,nrWage:6,nrWageHigh:18,nrWageSplit:44250};
+const CATS={'9A':'9A 執行業務所得','9B':'9B 稿費／講演鐘點費','50':'50 兼職薪資所得'};
+const STATUS={draft:'待簽回',signed:'已簽回',paid:'已付款'};
+
+function calc(s,r){
+  const amt=Math.max(0,Math.round(+s.job.amount||0));
+  const res=s.payee.resident!=='non';
+  let tr=0,nr=0,why=[];
+  if(s.job.cat==='50'){
+    if(res){ if(amt>=r.taxWageMin) tr=r.taxWage; why.push(`兼職薪資單次達 ${fmt(r.taxWageMin)} 元扣 ${r.taxWage}%`); }
+    else { tr= amt<=r.nrWageSplit?r.nrWage:r.nrWageHigh; why.push(`非居住者薪資：${fmt(r.nrWageSplit)} 元以下扣 ${r.nrWage}%，超過扣 ${r.nrWageHigh}%`); }
+    if(amt>=r.nhiMinWage) nr=r.nhiRate; why.push(`單次達 ${fmt(r.nhiMinWage)} 元扣補充保費 ${r.nhiRate}%`);
+  } else {
+    if(res){ if(amt>r.taxBizOver) tr=r.taxBiz; why.push(`單次超過 ${fmt(r.taxBizOver)} 元扣 ${r.taxBiz}%`); }
+    else if(s.job.cat==='9A'){ tr=r.nrBiz; why.push(`非居住者執行業務扣 ${r.nrBiz}%`); }
+    else { if(amt>r.nrRoyaltyOver) tr=r.nrBiz; why.push(`非居住者稿費超過 ${fmt(r.nrRoyaltyOver)} 元扣 ${r.nrBiz}%`); }
+    if(amt>=r.nhiMinBiz) nr=r.nhiRate; why.push(`單次達 ${fmt(r.nhiMinBiz)} 元扣補充保費 ${r.nhiRate}%`);
+  }
+  if(s.job.nhiExempt){ nr=0; why.push('已勾選免扣補充保費'); }
+  let tax=Math.round(amt*tr/100), nhi=Math.round(amt*nr/100);
+  if(s.job.manual){ tax=Math.max(0,Math.round(+s.job.manualTax||0)); nhi=Math.max(0,Math.round(+s.job.manualNhi||0)); why=['金額為手動輸入']; }
+  return {amt,tax,nhi,net:amt-tax-nhi,tr,nr,why};
+}
+function upper(n){
+  n=Math.max(0,Math.floor(n)); if(!n) return '零元整';
+  const d='零壹貳參肆伍陸柒捌玖',u=['','拾','佰','仟'],big=['','萬','億','兆'];
+  const g=[]; while(n>0){g.push(n%10000); n=Math.floor(n/10000);}
+  let out='',gap=false;
+  for(let i=g.length-1;i>=0;i--){
+    const v=g[i]; if(v===0){ if(out) gap=true; continue; }
+    let part='',z=false;
+    for(let k=3;k>=0;k--){ const dg=Math.floor(v/Math.pow(10,k))%10;
+      if(dg===0){ if(part) z=true; } else { if(z){part+='零';z=false;} part+=d[dg]+u[k]; } }
+    if(out && (gap || v<1000)) out+='零';
+    out+=part+big[i]; gap=false;
+  }
+  return '新臺幣 '+out+'元整';
+}
+
+/* ---------- 資料 ---------- */
+const DEFAULT_PAYER={name:'',taxId:'',contact:'',phone:''};
+const state={slips:[],settings:{kind:'settings',payer:clone(DEFAULT_PAYER),rates:clone(DEFAULT_RATES)},att:{},cur:null,q:''};
+
+function blankSlip(base){
+  const s={id:uid(),kind:'slip',no:nextNo(),created:Date.now(),updated:Date.now(),status:'draft',
+    payer:clone(state.settings.payer),
+    payee:{name:'',idNo:'',phone:'',email:'',address:'',resident:'res'},
+    job:{date:today(),title:'',from:today(),to:today(),cat:'9A',bizCode:'',desc:'',amount:'',nhiExempt:false,manual:false,manualTax:'',manualNhi:''},
+    bank:{bank:'',branch:'',account:'',holder:''},note:'',sign:null};
+  if(base){ s.payee=clone(base.payee); s.bank=clone(base.bank); s.payer=clone(base.payer); s.job.cat=base.job.cat; s.job.bizCode=base.job.bizCode; s.job.nhiExempt=base.job.nhiExempt; }
+  return s;
+}
+function nextNo(){
+  const d=today().replace(/-/g,''); const pre='LR'+d+'-';
+  let m=0; state.slips.forEach(s=>{ if(s.no&&s.no.startsWith(pre)){ const k=parseInt(s.no.slice(pre.length),10); if(k>m) m=k; } });
+  return pre+pad2(m+1);
+}
+function exampleSlip(){
+  const s=blankSlip(); s.example=true; s.no='LR'+today().replace(/-/g,'')+'-範例';
+  s.payer={name:'光圈影像工作室',taxId:'12345678',contact:'林小姐',phone:'02-2700-0000'};
+  s.payee={name:'王小明',idNo:'A123456789',phone:'0912-345-678',email:'xiaoming@example.com',address:'臺北市大安區復興南路一段 100 號 5 樓',resident:'res'};
+  s.job.title='秋季型錄商品拍攝 攝影助理';s.job.cat='9A';s.job.bizCode='9A-76';s.job.desc='燈光架設、器材管理、現場協助，共 2 日。';s.job.amount=24000;
+  s.bank={bank:'臺灣銀行',branch:'大安分行',account:'012-345-678901',holder:'王小明'};
+  return s;
+}
+const cur=()=>state.slips.find(s=>s.id===state.cur);
+
+/* ---------- 儲存（帳號雲端 > 本機瀏覽器 > 僅記憶體） ---------- */
+const LSK='laobao-ext-v1';
+/* 雲端結構：slips/<填單人id>/items/<單號>、slips/<id>/att/<附件>、config/main（給付單位與扣繳設定）
+   權限：管理者（頁面擁有者）讀寫全部；填單人只能讀寫自己的 slips/<自己id>。 */
+const Store={mode:'mem',db:null,uid:null,isOwner:false,lastName:null,
+  external:false,
+  async init(){ this.isOwner=false; this.external=true;
+    try{ localStorage.setItem(LSK+'-t','1'); localStorage.removeItem(LSK+'-t'); this.mode='local'; }catch(e){ this.mode='mem'; }
+    try{ const to=new URLSearchParams(location.search).get('to'); if(to) state.settings.payer.name=to.slice(0,60); }catch(e){} },
+  q(p){ return Promise.race([p,new Promise((_,j)=>setTimeout(()=>j({code:'timeout'}),10000))]); },
+  items(o){ return this.db.collection('slips/'+o+'/items'); },
+  atts(o){ return this.db.collection('slips/'+o+'/att'); },
+  lsRead(){ try{ return JSON.parse(localStorage.getItem(LSK)||'{}'); }catch(e){ return {}; } },
+  lsWrite(m){ localStorage.setItem(LSK,JSON.stringify(m)); },
+  async loadAll(){
+    const out={slips:[],att:[],config:null};
+    if(this.mode==='db'){
+      const cfg=await this.q(this.db.doc('config/main').get()); if(cfg.exists) out.config=cfg.data();
+      const owners=[this.uid];
+      if(this.isOwner){ const fs=await this.q(this.db.collection('slips').get()); fs.docs.forEach(d=>{ if(!owners.includes(d.id)) owners.push(d.id); }); }
+      await Promise.all(owners.map(async o=>{
+        const [a,b]=await Promise.all([this.q(this.items(o).get()),this.q(this.atts(o).get())]);
+        a.docs.forEach(d=>out.slips.push(Object.assign({},d.data(),{_o:o})));
+        b.docs.forEach(d=>out.att.push(Object.assign({},d.data(),{_o:o})));
+      }));
+    } else if(this.mode==='local'){
+      const m=this.lsRead(); Object.keys(m).forEach(k=>{ const r=m[k]; if(r.kind==='slip') out.slips.push(r); else if(r.kind==='att') out.att.push(r); else if(r.kind==='settings') out.config=r; });
+    }
+    return out;
+  },
+  async legacy(){
+    if(this.mode!=='db') return [];
+    try{ const r=await this.q(this.db.collection('data/users/'+this.uid).get()); return r.docs.map(d=>d.data()); }catch(e){ return []; }
+  },
+  async putSlip(s){
+    const o=clone(s); delete o._o;
+    if(this.mode==='db'){ const own=s._o||this.uid; await this.items(own).doc(s.id).set(o); if(own===this.uid) await this.touchFiller(s); return; }
+    if(this.mode==='local'){ const m=this.lsRead(); m[s.id]=o; this.lsWrite(m); }
+  },
+  async touchFiller(s){ const n=s.payee.name||''; if(this.lastName===n) return; await this.db.doc('slips/'+this.uid).set({kind:'filler',name:n,updated:Date.now()}); this.lastName=n; },
+  async delSlip(s){
+    if(this.mode==='db') return this.items(s._o||this.uid).doc(s.id).delete();
+    if(this.mode==='local'){ const m=this.lsRead(); delete m[s.id]; this.lsWrite(m); }
+  },
+  async putAtt(s,key,img){
+    const id=s.id+'-'+key;
+    if(this.mode==='db'){ const ref=this.atts(s._o||this.uid).doc(id); return img? ref.set({kind:'att',slip:s.id,key,img}) : ref.delete(); }
+    if(this.mode==='local'){ const m=this.lsRead(); if(img) m['a-'+id]={kind:'att',slip:s.id,key,img}; else delete m['a-'+id]; this.lsWrite(m); }
+  },
+  async putConfig(cfg){
+    if(this.mode==='db') return this.db.doc('config/main').set(cfg);
+    if(this.mode==='local'){ const m=this.lsRead(); m.settings=cfg; this.lsWrite(m); }
+  }
+};
+const timers={},chains={};
+function setSync(st,msg){
+  const el=$('#sync'); el.dataset.s=st;
+  const base={db:'已儲存',local:'已存在此瀏覽器',mem:'未儲存：重新整理會遺失'}[Store.mode];
+  el.lastChild.textContent= msg || (st==='saving'?'儲存中…':st==='error'?'儲存失敗，稍後再試':base);
+}
+function run(id,fn){ chains[id]=(chains[id]||Promise.resolve()).catch(()=>{}).then(fn); return chains[id]; }
+function errMsg(e){ const c=e&&e.code; return c==='quota_exceeded'?'空間已滿，請刪除舊單':c==='invalid_argument'?'你沒有填寫權限，請管理者把你設為「參與者」':''; }
+function queue(key,fn,delay){
+  if(Store.mode==='mem'){ setSync('idle'); return; }
+  clearTimeout(timers[key]); setSync('saving');
+  timers[key]=setTimeout(()=>{ run(key,fn).then(()=>setSync('saved')).catch(e=>{ console.warn(e); if(!Store.isOwner&&Store.mode==='db'&&e&&e.code==='invalid_argument'){ goExternal(); return; } setSync('error',errMsg(e)); }); }, delay==null?700:delay);
+}
+function goExternal(){
+  if(Store.external) return; Store.external=true; Store.db=null;
+  try{ localStorage.setItem(LSK+'-t','1'); localStorage.removeItem(LSK+'-t'); Store.mode='local'; }catch(e){ Store.mode='mem'; }
+  applyRole(); state.slips.forEach(s=>{ delete s._o; saveSlip(s,0); });
+  state.slips.forEach(s=>Object.keys(state.att[s.id]||{}).forEach(k=>saveAtt(s,k)));
+  toast('已改用外部填寫模式：填完請匯出 PDF 回傳');
+}
+function saveSlip(s,delay){ queue(s.id,()=>Store.putSlip(s),delay); }
+function saveSettings(){ if(!Store.isOwner) return; queue('config',()=>Store.putConfig(clone(state.settings))); }
+function saveAtt(s,key){ const data=(state.att[s.id]||{})[key]; queue('a-'+s.id+'-'+key,()=>Store.putAtt(s,key,data),0); }
+
+/* ---------- 表單定義 ---------- */
+const SECTIONS=[
+  {title:'所得人資料',extra:'<select id="from-past" class="btn sm" aria-label="帶入過往所得人"><option value="">帶入過往所得人…</option></select>',fields:[
+    ['payee.name','姓名'],['payee.idNo','身分證字號／居留證號'],
+    ['payee.phone','電話','tel'],['payee.email','Email','email'],
+    ['payee.address','戶籍地址','text','wide'],
+    ['payee.resident','稅務身分',[['res','居住者（本年在臺滿 183 天）'],['non','非居住者']]],
+    ['status','單據狀態',Object.entries(STATUS),'owner']
+  ]},
+  {title:'勞務內容與金額',fields:[
+    ['job.title','案件名稱','text','wide'],
+    ['job.from','工作期間（起）','date'],['job.to','工作期間（迄）','date'],
+    ['job.cat','所得類別',Object.entries(CATS)],['job.bizCode','執行業務代號（9A 用，選填）','text'],
+    ['job.desc','工作內容說明','textarea','wide'],
+    ['job.amount','應付金額（新臺幣，稅前）','number'],['job.date','填單日期','date'],
+    ['job.nhiExempt','所得人已在職業工會投保等，免扣二代健保補充保費','check'],
+    ['job.manual','手動輸入扣繳金額（特殊情況時使用）','check','owner'],
+    ['job.manualTax','代扣所得稅（手動）','number','manual'],['job.manualNhi','代扣補充保費（手動）','number','manual']
+  ],sum:true},
+  {title:'收款帳戶',fields:[['bank.bank','銀行'],['bank.branch','分行'],['bank.account','帳號'],['bank.holder','戶名']]},
+];
+function fieldHTML(f){
+  const [k,label,t,flag]=f; const id='f-'+k.replace(/\./g,'-');
+  const cls='f'+(flag==='wide'||t==='textarea'?' wide':'')+(flag==='owner'?' owner-only':'');
+  const attr=`id="${id}" data-k="${k}"`+(flag==='manual'?' data-manual="1"':'');
+  if(t==='check') return `<label class="chk${flag==='owner'?' owner-only':''}"><input type="checkbox" ${attr}><span>${esc(label)}</span></label>`;
+  let input;
+  if(Array.isArray(t)) input=`<select ${attr}>${t.map(([v,l])=>`<option value="${esc(v)}">${esc(l)}</option>`).join('')}</select>`;
+  else if(t==='textarea') input=`<textarea ${attr}></textarea>`;
+  else input=`<input ${attr} type="${t||'text'}"${t==='number'?' inputmode="numeric" min="0" step="1"':''} autocomplete="off">`;
+  return `<div class="${cls}"${flag==='manual'?' data-wrap="manual"':''}><label for="${id}">${esc(label)}</label>${input}</div>`;
+}
+function buildEditor(){
+  const r=state.settings.rates;
+  let h=`<div class="card guide ext-only"><h2><span>填寫說明</span></h2><ol>
+    <li>填好你的個人資料、案件內容和金額，下方會自動算出實領金額。</li>
+    <li>按「簽名」，在框內親手簽名。</li>
+    <li>按右上角「匯出 PDF 回傳」，把 PDF 用 LINE 或 Email 傳給 <b id="g-payer">給付單位</b>。</li></ol>
+    <p class="hint">資料只存在你這台裝置的瀏覽器。換裝置或清除瀏覽資料就會不見，請以傳出去的 PDF 為準。</p></div>`;
+  h+=SECTIONS.map(sec=>`<div class="card"><h2><span>${sec.title}</span>${sec.extra||''}</h2><div class="grid">${sec.fields.map(fieldHTML).join('')}</div>${sec.sum?'<div class="sum" id="sum"></div><div class="rule" id="rule"></div>':''}</div>`).join('');
+  h+=`<div class="card"><h2><span>所得人簽名</span></h2>
+    <div class="sig"><div class="sigbox" id="sigbox"></div>
+    <div style="display:flex;flex-direction:column;gap:8px;min-width:0">
+      <button class="btn primary" id="btn-sign">請所得人簽名</button>
+      <button class="btn sm" id="btn-unsign">清除簽名</button>
+      <span class="hint" id="sig-at"></span></div></div>
+    <p class="hint">確認金額與帳戶無誤後，用手指在框內簽名。簽好後再匯出 PDF。</p></div>`;
+  h+=`<div class="card"><h2><span>附件（選填）</span></h2><div class="att">${[['front','身分證正面'],['back','身分證反面'],['book','存摺封面']].map(([k,l])=>`
+    <div class="slot"><div class="thumb" id="th-${k}">尚未上傳</div><span>${l}</span>
+    <div class="row"><label class="btn sm" for="up-${k}">上傳</label><input type="file" accept="image/*" id="up-${k}" data-att="${k}"><button class="btn sm" data-rm="${k}">移除</button></div></div>`).join('')}</div>
+    <p class="hint">附件會放在 PDF 第 2 頁。圖片會自動壓縮。</p></div>`;
+  h+=`<div class="card"><div class="grid"><div class="f wide"><label for="f-note">備註（會印在單據上）</label><textarea id="f-note" data-k="note"></textarea></div></div></div>`;
+  h+=`<details class="card owner-only"><summary>給付單位（本單）</summary><div class="grid">
+    ${[['payer.name','單位名稱'],['payer.taxId','統一編號'],['payer.contact','承辦人'],['payer.phone','聯絡電話']].map(fieldHTML).join('')}
+    </div><p class="hint"><button class="btn sm" id="btn-defpayer">設為之後新單的預設</button></p></details>`;
+  h+=`<details class="card owner-only"><summary>扣繳設定（115 年度預設）</summary><div class="grid">
+    ${[['nhiRate','補充保費費率 %'],['nhiMinBiz','9A／9B 補充保費門檻（達）'],['nhiMinWage','兼職薪資補充保費門檻（達，基本工資）'],['taxBiz','9A／9B 扣繳率 %'],['taxBizOver','9A／9B 扣繳門檻（超過）'],['taxWage','兼職薪資扣繳率 %'],['taxWageMin','兼職薪資扣繳門檻（達）'],['nrBiz','非居住者 9A／9B 扣繳率 %'],['nrRoyaltyOver','非居住者稿費門檻（超過）'],['nrWage','非居住者薪資扣繳率 %（低）'],['nrWageHigh','非居住者薪資扣繳率 %（高）'],['nrWageSplit','非居住者薪資分界金額']]
+      .map(([k,l])=>`<div class="f"><label for="r-${k}">${l}</label><input type="number" step="any" id="r-${k}" data-r="${k}"></div>`).join('')}
+    </div><p class="hint">金額規則每年可能調整，請以財政部與健保署公告為準。<button class="btn sm" id="btn-resetrates">恢復預設值</button></p></details>`;
+  $('#editor').innerHTML=h;
+
+  $('#editor').addEventListener('input',onInput);
+  $('#editor').addEventListener('change',onInput);
+  $('#btn-sign').onclick=openSign;
+  $('#btn-unsign').onclick=()=>{const s=cur(); if(!s||!s.sign) return; s.sign=null; if(s.status==='signed') s.status='draft'; touched(s); fillForm();};
+  $('#btn-defpayer').onclick=()=>{const s=cur(); state.settings.payer=clone(s.payer); saveSettings(); toast('已設為預設給付單位');};
+  $('#btn-resetrates').onclick=()=>{state.settings.rates=clone(DEFAULT_RATES); saveSettings(); fillForm(); renderAll();};
+  $('#editor').querySelectorAll('[data-rm]').forEach(b=>b.onclick=()=>{const s=cur(); const a=state.att[s.id]; if(a&&a[b.dataset.rm]){delete a[b.dataset.rm]; saveAtt(s,b.dataset.rm); fillAtt(); renderPreview();}});
+  $('#from-past').addEventListener('change',e=>{
+    const v=e.target.value; e.target.value=''; if(!v) return;
+    const src=state.slips.find(x=>x.id===v), s=cur(); if(!src||!s) return;
+    s.payee=clone(src.payee); s.bank=clone(src.bank); touched(s); fillForm(); toast('已帶入 '+(src.payee.name||'所得人')+' 的資料');
+  });
+}
+function onInput(e){
+  const el=e.target; const s=cur(); if(!s) return;
+  if(el.dataset.att){ if(e.type==='change') uploadAtt(el); return; }
+  if(el.dataset.r){ const v=parseFloat(el.value); state.settings.rates[el.dataset.r]=isNaN(v)?0:v; saveSettings(); renderCalc(); renderPreview(); return; }
+  const k=el.dataset.k; if(!k) return;
+  let v= el.type==='checkbox'?el.checked : el.value;
+  if(el.type==='number' && v!=='') v=+v;
+  if(getP(s,k)===v) return;
+  setP(s,k,v);
+  if(k==='job.manual') toggleManual();
+  touched(s);
+}
+function touched(s){
+  s.updated=Date.now(); if(s.example) delete s.example;
+  if(s.no&&s.no.endsWith('範例')) s.no=nextNo();
+  saveSlip(s); renderCalc(); renderList(); schedulePreview(); fillSign();
+}
+
+function fillForm(){
+  const s=cur(); if(!s) return;
+  $('#editor').querySelectorAll('[data-k]').forEach(el=>{ const v=getP(s,el.dataset.k);
+    if(el.type==='checkbox') el.checked=!!v; else el.value= v==null?'':v; });
+  $('#editor').querySelectorAll('[data-r]').forEach(el=>{ el.value=state.settings.rates[el.dataset.r]; });
+  const past=$('#from-past'); const seen=new Set();
+  past.innerHTML='<option value="">帶入過往所得人…</option>'+state.slips.filter(x=>x.id!==s.id&&x.payee.name).sort((a,b)=>b.updated-a.updated)
+    .filter(x=>{const key=x.payee.name+'|'+x.payee.idNo; if(seen.has(key)) return false; seen.add(key); return true;})
+    .map(x=>`<option value="${x.id}">${esc(x.payee.name)}${x.payee.idNo?'（'+esc(x.payee.idNo.slice(0,4))+'…）':''}</option>`).join('');
+  toggleManual(); renderCalc(); fillSign(); fillAtt();
+}
+function toggleManual(){ const on=!!(cur()&&cur().job.manual); document.querySelectorAll('[data-wrap="manual"]').forEach(w=>w.hidden=!on); }
+function renderCalc(){
+  const s=cur(); if(!s||!$('#sum')) return; const c=calc(s,state.settings.rates);
+  $('#sum').innerHTML=`<div><small>應付金額</small><b>${fmt(c.amt)}</b></div><div><small>代扣所得稅${c.tr?' '+c.tr+'%':''}</small><b>−${fmt(c.tax)}</b></div><div><small>補充保費${c.nr?' '+c.nr+'%':''}</small><b>−${fmt(c.nhi)}</b></div><div><small>實付金額</small><b>${fmt(c.net)}</b></div>`;
+  $('#rule').textContent=CATS[s.job.cat].split(' ')[0]+'：'+c.why.join('；')+'。';
+}
+function fillSign(){
+  const s=cur(); if(!s) return;
+  $('#sigbox').innerHTML= s.sign? `<img src="${s.sign.img}" alt="所得人簽名">` : '尚未簽名';
+  $('#sig-at').textContent= s.sign? '簽署時間 '+new Date(s.sign.at).toLocaleString('zh-TW',{hour12:false}) : '';
+  $('#btn-unsign').hidden=!s.sign;
+}
+function fillAtt(){
+  const s=cur(); const a=(s&&state.att[s.id])||{};
+  ['front','back','book'].forEach(k=>{ $('#th-'+k).innerHTML= a[k]?`<img src="${a[k]}" alt="">`:'尚未上傳'; const rm=$(`[data-rm="${k}"]`); if(rm) rm.hidden=!a[k]; });
+}
+async function uploadAtt(input){
+  const f=input.files&&input.files[0]; input.value=''; if(!f) return;
+  const s=cur(); const k=input.dataset.att;
+  try{
+    let data=await compress(f,1100,.72);
+    if(data.length>240000) data=await compress(f,800,.6);
+    if(data.length>240000){ toast('圖片太大，請換一張較小的照片'); return; }
+    (state.att[s.id]=state.att[s.id]||{})[k]=data; saveAtt(s,k); fillAtt(); renderPreview();
+  }catch(e){ toast('無法讀取這個檔案，請上傳 JPG 或 PNG 圖片'); }
+}
+function compress(file,max,q){
+  return new Promise((ok,no)=>{ const url=URL.createObjectURL(file); const img=new Image();
+    img.onload=()=>{ const sc=Math.min(1,max/Math.max(img.width,img.height)); const c=document.createElement('canvas');
+      c.width=Math.round(img.width*sc); c.height=Math.round(img.height*sc); const x=c.getContext('2d'); x.fillStyle='#fff'; x.fillRect(0,0,c.width,c.height); x.drawImage(img,0,0,c.width,c.height);
+      URL.revokeObjectURL(url); ok(c.toDataURL('image/jpeg',q)); };
+    img.onerror=()=>{URL.revokeObjectURL(url); no();}; img.src=url; });
+}
+
+/* ---------- 清單 ---------- */
+const others=s=>Store.mode==='db'&&Store.isOwner&&s._o&&s._o!==Store.uid;
+function renderList(){
+  const q=state.q.trim().toLowerCase();
+  const arr=state.slips.slice().sort((a,b)=>b.updated-a.updated);
+  const rows=arr.filter(s=>!q||(s.payee.name+s.job.title+s.no).toLowerCase().includes(q));
+  $('#items').innerHTML=rows.map(s=>{ const c=calc(s,state.settings.rates);
+    return `<button class="item${s.id===state.cur?' on':''}" data-id="${s.id}">
+      <span class="r1"><span class="nm">${esc(s.payee.name||'未填姓名')}</span>${s.example?'<span class="chip ex">範例</span>':`<span class="chip ${s.status}">${STATUS[s.status]}</span>`}</span>
+      <span class="r2">${others(s)?'<span class="by">他人填寫</span> ':''}${s.imported&&Store.isOwner?'<span class="by">外部回傳</span> ':''}${esc(s.job.title||'未填案件')}</span>
+      <span class="r1"><span class="r2">${esc(s.job.date||'')}</span><span class="amt">實付 ${fmt(c.net)}</span></span></button>`; }).join('') || '<p class="hint">找不到符合的勞報單。</p>';
+  $('#pick').innerHTML=arr.map(s=>`<option value="${s.id}"${s.id===state.cur?' selected':''}>${esc((s.payee.name||'未填姓名')+'｜'+(s.job.title||'未填案件')+'｜'+(s.example?'範例':STATUS[s.status])+(others(s)?'｜他人填寫':''))}</option>`).join('');
+}
+$('#items').addEventListener('click',e=>{const b=e.target.closest('.item'); if(b) select(b.dataset.id);});
+$('#pick').addEventListener('change',e=>select(e.target.value));
+$('#q').addEventListener('input',e=>{state.q=e.target.value; renderList();});
+function select(id){ state.cur=id; disarm(); renderList(); fillForm(); renderPreview(); }
+
+function addNew(base){ const s=blankSlip(base); state.slips.push(s); select(s.id); saveSlip(s,0); toast(base?'已複製成新單，請填寫新的案件與金額':'已新增勞報單'); const n=$('#f-'+(base?'job-title':'payee-name')); if(n) n.focus(); }
+$('#btn-new').onclick=()=>addNew(); $('#btn-new2').onclick=()=>addNew();
+$('#btn-dup').onclick=()=>{ const s=cur(); if(s) addNew(s); };
+let armT=null;
+function disarm(){ const b=$('#btn-del'); b.classList.remove('armed'); b.textContent='刪除'; clearTimeout(armT); }
+$('#btn-del').onclick=()=>{
+  const b=$('#btn-del'); if(!b.classList.contains('armed')){ b.classList.add('armed'); b.textContent='再按一次確認刪除'; armT=setTimeout(disarm,4000); return; }
+  disarm(); const s=cur(); if(!s) return;
+  state.slips=state.slips.filter(x=>x.id!==s.id); clearTimeout(timers[s.id]);
+  if(Store.mode!=='mem'){ run(s.id,()=>Store.delSlip(s)).catch(()=>{}); Object.keys(state.att[s.id]||{}).forEach(k=>run('a-'+s.id+'-'+k,()=>Store.putAtt(s,k,null)).catch(()=>{})); }
+  delete state.att[s.id];
+  if(!state.slips.length){ const n=blankSlip(); state.slips.push(n); }
+  select(state.slips.slice().sort((a,b)=>b.updated-a.updated)[0].id); toast('已刪除');
+};
+
+/* ---------- A4 單據 ---------- */
+function sheetHTML(s){
+  const c=calc(s,state.settings.rates), r=s.payee.resident==='non'?'非居住者':'居住者';
+  const period= s.job.from&&s.job.to&&s.job.from!==s.job.to? `${s.job.from} 至 ${s.job.to}` : (s.job.from||s.job.to||'');
+  const cat=CATS[s.job.cat]+(s.job.cat==='9A'&&s.job.bizCode?`（${s.job.bizCode}）`:'');
+  const td=(v,cls)=>`<td${cls?` class="${cls}"`:''}>${esc(v)}</td>`;
+  const page1=`<div class="sheet" style="position:relative">
+    ${s.example?'<div class="exmark">範例資料</div>':''}
+    <div class="hd"><div><div class="org">${esc(s.payer.name||'（給付單位）')}</div><h2 class="ttl">勞務報酬單</h2></div>
+      <table class="meta"><tr><th>單號</th><td>${esc(s.no)}</td></tr><tr><th>填單日期</th><td>${esc(s.job.date)}</td></tr><tr><th>狀態</th><td>${STATUS[s.status]}</td></tr></table></div>
+    <table class="t"><colgroup><col style="width:96px"><col><col style="width:96px"><col></colgroup>
+      <tr class="sec"><th colspan="4">給付單位</th></tr>
+      <tr><th>單位名稱</th>${td(s.payer.name)}<th>統一編號</th>${td(s.payer.taxId,'n')}</tr>
+      <tr><th>承辦人</th>${td(s.payer.contact)}<th>聯絡電話</th>${td(s.payer.phone,'n')}</tr>
+      <tr class="sec"><th colspan="4">所得人</th></tr>
+      <tr><th>姓名</th>${td(s.payee.name)}<th>身分證字號</th>${td(s.payee.idNo,'n')}</tr>
+      <tr><th>電話</th>${td(s.payee.phone,'n')}<th>Email</th>${td(s.payee.email)}</tr>
+      <tr><th>戶籍地址</th><td colspan="3">${esc(s.payee.address)}</td></tr>
+      <tr><th>稅務身分</th>${td(r)}<th>所得類別</th>${td(cat)}</tr>
+      <tr class="sec"><th colspan="4">勞務內容</th></tr>
+      <tr><th>案件名稱</th><td colspan="3">${esc(s.job.title)}</td></tr>
+      <tr><th>工作期間</th><td colspan="3" class="n">${esc(period)}</td></tr>
+      <tr><th>工作說明</th><td colspan="3" style="height:52px">${esc(s.job.desc)}</td></tr>
+    </table>
+    <table class="t money">
+      <tr class="sec"><th colspan="4">金額（新臺幣・元）</th></tr>
+      <tr><th>應付金額</th><th>代扣所得稅${c.tr&&!s.job.manual?'（'+c.tr+'%）':''}</th><th>二代健保補充保費${c.nr&&!s.job.manual?'（'+c.nr+'%）':''}</th><th>實付金額</th></tr>
+      <tr><td>${fmt(c.amt)}</td><td>${fmt(c.tax)}</td><td>${fmt(c.nhi)}</td><td class="net">${fmt(c.net)}</td></tr>
+      <tr class="up"><th style="width:auto">實付金額大寫</th><td colspan="3">${upper(c.net)}</td></tr>
+    </table>
+    <table class="t"><colgroup><col style="width:96px"><col><col style="width:96px"><col></colgroup>
+      <tr class="sec"><th colspan="4">收款帳戶</th></tr>
+      <tr><th>銀行</th>${td(s.bank.bank)}<th>分行</th>${td(s.bank.branch)}</tr>
+      <tr><th>帳號</th>${td(s.bank.account,'n')}<th>戶名</th>${td(s.bank.holder)}</tr>
+      ${s.note?`<tr><th>備註</th><td colspan="3">${esc(s.note)}</td></tr>`:''}
+    </table>
+    <p class="decl">本人確實提供上述勞務，並同意給付單位依法代扣所得稅及二代健保補充保費後，將實付金額匯入上列帳戶。所填個人資料僅供本次報酬給付、扣繳申報及保費申報使用。</p>
+    <div class="signrow"><div class="lb">所得人簽章</div>
+      <div class="sg">${s.sign?`<img src="${s.sign.img}" alt="">`:'<span class="empty">（請簽名或蓋章）</span>'}</div>
+      <div class="lb">簽署日期</div><div class="dt">${s.sign?new Date(s.sign.at).toLocaleDateString('zh-TW'):'　　年　　月　　日'}</div></div>
+    <div class="stamps"><div>承辦</div><div>會計</div><div>主管</div><div>出納</div></div>
+    <div class="foot"><span>${esc(s.no)}</span><span>第 1 頁</span></div>
+  </div>`;
+  const a=state.att[s.id]||{}; const imgs=[['front','身分證正面'],['back','身分證反面'],['book','存摺封面']].filter(([k])=>a[k]);
+  if(!imgs.length) return [page1];
+  const page2=`<div class="sheet"><div class="hd"><div><div class="org">${esc(s.payee.name)}・${esc(s.no)}</div><h2 class="ttl" style="font-size:24px">附件</h2></div></div>
+    <div class="atts">${imgs.map(([k,l],i)=>`<figure${k==='book'?' class="full"':''}><img src="${a[k]}" alt=""><figcaption>${l}</figcaption></figure>`).join('')}</div>
+    <p class="decl" style="margin-top:auto">本附件僅供 ${esc(s.payer.name||'給付單位')} 辦理勞務報酬給付及扣繳申報使用。</p>
+    <div class="foot"><span>${esc(s.no)}</span><span>第 2 頁</span></div></div>`;
+  return [page1,page2];
+}
+let pvT=null;
+function schedulePreview(){ clearTimeout(pvT); pvT=setTimeout(renderPreview,160); }
+function renderPreview(){
+  const s=cur(); if(!s) return; const pages=sheetHTML(s);
+  $('#pv').innerHTML=pages.map(p=>`<div class="pv-page">${p}</div>`).join('');
+  $('#pv-pages').textContent='共 '+pages.length+' 頁'; fitPreview();
+}
+function fitPreview(){
+  const box=$('#pv'); const w=box.clientWidth; if(!w) return; const sc=Math.min(1,w/794);
+  box.querySelectorAll('.pv-page').forEach(p=>{ p.style.width=794*sc+'px'; p.style.height=1123*sc+'px'; p.firstElementChild.style.transform=`scale(${sc})`; });
+}
+try{ new ResizeObserver(fitPreview).observe($('#pv')); }catch(e){ window.addEventListener('resize',fitPreview); }
+
+/* ---------- PDF ---------- */
+$('#btn-pdf').onclick=async()=>{
+  const s=cur(); if(!s) return; const b=$('#btn-pdf');
+  if(!window.jspdf||!window.html2canvas){ toast('PDF 元件尚未載入，請稍候再試'); return; }
+  b.disabled=true; b.textContent='產生中…';
+  try{
+    const host=$('#render-host'); host.innerHTML=sheetHTML(s).join('');
+    if(document.fonts&&document.fonts.ready) await document.fonts.ready;
+    await Promise.all([...host.querySelectorAll('img')].map(i=>i.complete?0:new Promise(r=>{i.onload=i.onerror=r;})));
+    const pdf=new window.jspdf.jsPDF({unit:'mm',format:'a4',compress:true});
+    const sheets=host.querySelectorAll('.sheet');
+    for(let i=0;i<sheets.length;i++){
+      const cv=await window.html2canvas(sheets[i],{scale:2,backgroundColor:'#ffffff',logging:false});
+      if(i) pdf.addPage();
+      pdf.addImage(cv.toDataURL('image/jpeg',.9),'JPEG',0,0,210,297);
+    }
+    host.innerHTML='';
+    const ym=(String(s.job.from||s.job.date||today()).match(/^(\d{4})-(\d{2})/)||[]).slice(1,3).join('-')||today().slice(0,7);
+    const name=`${ym}_${(s.payee.name||'未填姓名').replace(/[\\/:*?"<>|\s]/g,'')}_勞報單.pdf`;
+    try{ pdf.setProperties({title:'勞務報酬單 '+s.no,subject:'勞務報酬單',keywords:'LAOBAO1:'+b64(JSON.stringify({v:1,slip:Object.assign({},s,{_o:undefined}),att:state.att[s.id]||{}}))}); }catch(e){ console.warn(e); }
+    offerPdf(name,pdf.output('blob'));
+  }catch(e){
+    if(e&&['unavailable','not_granted','capability_disabled','capability_removed'].includes(e.code)){ openReturn(s); return; }
+    const m={declined:'已取消存檔',rate_limited:'上一個存檔視窗還開著，請先處理它'}[e&&e.code];
+    toast(m||'PDF 產生失敗，請再試一次'); console.warn(e);
+  }finally{ b.disabled=false; b.textContent=(document.body.dataset.role==='external')?'匯出 PDF 回傳':'匯出 PDF'; }
+};
+
+function b64u(by){ let bin=''; for(let i=0;i<by.length;i+=0x8000) bin+=String.fromCharCode.apply(null,by.subarray(i,i+0x8000)); return btoa(bin).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); }
+function fromB64u(t){ t=t.replace(/-/g,'+').replace(/_/g,'/'); while(t.length%4) t+='='; const bin=atob(t); const by=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) by[i]=bin.charCodeAt(i); return by; }
+async function packCode(obj){
+  const by=new TextEncoder().encode(JSON.stringify(obj));
+  if(window.CompressionStream){ try{ const st=new Blob([by]).stream().pipeThrough(new CompressionStream('deflate-raw')); return 'LB1.'+b64u(new Uint8Array(await new Response(st).arrayBuffer())); }catch(e){} }
+  return 'LB0.'+b64u(by);
+}
+async function unpackCode(text){
+  const m=String(text).replace(/\s+/g,'').match(/LB([01])\.([A-Za-z0-9_-]{8,})/); if(!m) return null;
+  let by=fromB64u(m[2]);
+  if(m[1]==='1'){ const st=new Blob([by]).stream().pipeThrough(new DecompressionStream('deflate-raw')); by=new Uint8Array(await new Response(st).arrayBuffer()); }
+  return JSON.parse(new TextDecoder().decode(by));
+}
+/* ---------- 回傳碼 v3（精簡：只帶所得人填的欄位＋簡化簽名，用中文字元編碼） ---------- */
+const CODE_F=[['payee','name'],['payee','idNo'],['payee','phone'],['payee','email'],['payee','address'],['job','date'],['job','title'],['job','from'],['job','to'],['job','cat'],['job','bizCode'],['job','desc'],['job','amount'],['bank','bank'],['bank','branch'],['bank','account'],['bank','holder']];
+const SIG_W=320, CJK0=0x4E00;
+function vEnc(o,n){ n=Math.max(0,Math.round(n)); while(n>127){ o.push((n&127)|128); n=Math.floor(n/128); } o.push(n); }
+function vDec(by,p){ let n=0,m=1,b; do{ if(p.i>=by.length) throw new Error('eof'); b=by[p.i++]; n+=(b&127)*m; m*=128; }while(b&128); return n; }
+const zz=n=>n<0?-2*n-1:2*n, unzz=n=>n&1?-(n+1)/2:n/2;
+function rdp(pts,eps){
+  if(pts.length<3) return pts; const keep=new Uint8Array(pts.length); keep[0]=keep[pts.length-1]=1; const st=[[0,pts.length-1]];
+  while(st.length){ const [a,b]=st.pop(); const [ax,ay]=pts[a],[bx,by]=pts[b]; const dx=bx-ax,dy=by-ay,L=Math.hypot(dx,dy)||1; let md=0,mi=-1;
+    for(let i=a+1;i<b;i++){ const d=Math.abs(dy*(pts[i][0]-ax)-dx*(pts[i][1]-ay))/L; if(d>md){md=d;mi=i;} }
+    if(md>eps){ keep[mi]=1; st.push([a,mi],[mi,b]); } }
+  return pts.filter((_,i)=>keep[i]);
+}
+function sigEnc(st,o){
+  const k=Math.min(1,SIG_W/st.w);
+  vEnc(o,st.w*k); vEnc(o,st.h*k); vEnc(o,st.lw*k*10);
+  const ss=st.d.map(a=>{ const p=[]; let x=0,y=0; for(let i=0;i+1<a.length;i+=2){ x=i?x+a[i]:a[i]; y=i?y+a[i+1]:a[i+1]; p.push([x*k,y*k]); }
+    const r=rdp(p,0.7).map(([x,y])=>[Math.round(x),Math.round(y)]);
+    return r.filter((q,i)=>i===0||q[0]!==r[i-1][0]||q[1]!==r[i-1][1]); });
+  vEnc(o,ss.length);
+  ss.forEach(p=>{ vEnc(o,p.length); p.forEach(([x,y],i)=>{ if(!i){vEnc(o,x);vEnc(o,y);} else {vEnc(o,zz(x-p[i-1][0]));vEnc(o,zz(y-p[i-1][1]));} }); });
+}
+function sigDec(by,p){
+  const w=vDec(by,p),h=vDec(by,p),lw=vDec(by,p)/10,n=vDec(by,p),d=[];
+  if(n>2000) throw new Error('bad');
+  for(let s=0;s<n;s++){ const c=vDec(by,p); if(c>5000) throw new Error('bad'); const a=[];
+    for(let i=0;i<c;i++){ if(!i){a.push(vDec(by,p),vDec(by,p));} else {a.push(unzz(vDec(by,p)),unzz(vDec(by,p)));} } d.push(a); }
+  return {w,h,lw,d};
+}
+function cjkEnc(by){ let s='',acc=0,bits=0; for(const b of by){ acc=acc*256+b; bits+=8; while(bits>=14){ bits-=14; const v=Math.floor(acc/2**bits); acc-=v*2**bits; s+=String.fromCharCode(CJK0+v); } }
+  if(bits) s+=String.fromCharCode(CJK0+acc*2**(14-bits)); return s; }
+function cjkDec(s,r){ const out=[]; let acc=0,bits=0; for(const ch of s){ const v=ch.charCodeAt(0)-CJK0; if(v<0||v>=16384) throw new Error('bad'); acc=acc*16384+v; bits+=14; while(bits>=8){ bits-=8; const b=Math.floor(acc/2**bits); acc-=b*2**bits; out.push(b); } }
+  const n=Math.floor(s.length*14/8); const len= (n%7===r)?n:n-1; return new Uint8Array(out.slice(0,len)); }
+async function deflate(by){ const st=new Blob([by]).stream().pipeThrough(new CompressionStream('deflate-raw')); return new Uint8Array(await new Response(st).arrayBuffer()); }
+async function inflate(by){ const st=new Blob([by]).stream().pipeThrough(new DecompressionStream('deflate-raw')); return new Uint8Array(await new Response(st).arrayBuffer()); }
+async function packCode3(s,sign){
+  const a=[s.id,s.payee.resident==='non'?1:0,s.job.nhiExempt?1:0,sign?sign.at:''].concat(CODE_F.map(([g,k])=>{ const v=s[g][k]; return v==null?'':v; }),[s.note||'']);
+  while(a.length>4&&a[a.length-1]==='') a.pop();
+  const txt=new TextEncoder().encode(JSON.stringify(a)); const o=[]; vEnc(o,txt.length); o.push(...txt);
+  if(sign&&sign.st) sigEnc(sign.st,o);
+  const z=await deflate(new Uint8Array(o));
+  return 'LB3'+(z.length%7)+'.'+cjkEnc(z)+'.';
+}
+async function unpackCode3(text){
+  const m=String(text).match(/LB3([0-6])\.([一-跿\s]+)\./); if(!m) return null;
+  const by=await inflate(cjkDec(m[2].replace(/\s+/g,''),+m[1])); const p={i:0};
+  const n=vDec(by,p); const a=JSON.parse(new TextDecoder().decode(by.slice(p.i,p.i+n))); p.i+=n;
+  if(!Array.isArray(a)) throw new Error('bad');
+  const slip={kind:'slip',id:String(a[0]),status:'draft',payee:{resident:a[1]?'non':'res'},job:{nhiExempt:!!a[2]},bank:{},note:''};
+  CODE_F.forEach(([g,k],i)=>{ const v=a[4+i]; slip[g][k]= v==null?'':v; }); slip.note=a[4+CODE_F.length]||'';
+  if(p.i<by.length) slip.sign={at:a[3]||new Date().toISOString(),st:sigDec(by,p)};
+  return {v:1,slip};
+}
+async function openReturn(s){
+  $('#r-payer').textContent=s.payer.name||state.settings.payer.name||'給付單位';
+  const sign= s.sign&&s.sign.st ? {at:s.sign.at,st:s.sign.st} : null;
+  $('#r-warn').hidden=!(s.sign&&!s.sign.st);
+  $('#r-code').value='產生中…'; $('#r-img').textContent='產生中…'; $('#rmodal').hidden=false;
+  try{ $('#r-code').value='【勞報單回傳碼】'+(s.payee.name||'')+' '+await packCode3(s,sign);
+    $('#r-len').textContent='共 '+$('#r-code').value.length+' 字'; }
+  catch(e){ $('#r-code').value='回傳碼產生失敗，請重新整理後再試'; }
+  try{
+    const host=$('#render-host'); host.innerHTML=sheetHTML(s).join('');
+    if(document.fonts&&document.fonts.ready) await document.fonts.ready;
+    await Promise.all([...host.querySelectorAll('img')].map(i=>i.complete?0:new Promise(r=>{i.onload=i.onerror=r;})));
+    const out=[]; const pages=host.querySelectorAll('.sheet');
+    for(let i=0;i<pages.length;i++){ const cv=await window.html2canvas(pages[i],{scale:1.6,backgroundColor:'#ffffff',logging:false}); out.push(`<img alt="${i?'附件':'勞務報酬單'}" src="${cv.toDataURL('image/jpeg',.88)}">`); }
+    host.innerHTML=''; $('#r-img').innerHTML=out.join('');
+  }catch(e){ $('#r-img').textContent='單據畫面產生失敗，回傳碼仍可使用。'; }
+}
+$('#r-close').onclick=()=>{$('#rmodal').hidden=true;};
+$('#r-copy').onclick=()=>{
+  const t=$('#r-code'); const done=()=>{ $('#r-copy').textContent='已複製'; toast('已複製，請貼到 LINE 或 Email 傳出'); setTimeout(()=>$('#r-copy').textContent='複製回傳碼',2500); };
+  const pick=()=>{ t.focus(); t.select(); t.setSelectionRange(0,t.value.length); let ok=false; try{ ok=document.execCommand('copy'); }catch(e){} ok?done():toast('已幫你選取，請長按文字選「拷貝」'); };
+  try{ navigator.clipboard.writeText(t.value).then(done,pick); }catch(e){ pick(); }
+};
+function strokesPng(st){
+  const c=document.createElement('canvas'); c.width=st.w*2; c.height=st.h*2; const x=c.getContext('2d'); x.scale(2,2);
+  x.lineCap='round'; x.lineJoin='round'; x.strokeStyle='#14213d'; x.fillStyle='#14213d'; x.lineWidth=st.lw;
+  st.d.forEach(a=>{ const pts=[]; let px=0,py=0; for(let i=0;i+1<a.length;i+=2){ px= i?px+a[i]:a[i]; py= i?py+a[i+1]:a[i+1]; pts.push([px,py]); }
+    if(pts.length===1){ x.beginPath(); x.arc(pts[0][0],pts[0][1],st.lw/2,0,7); x.fill(); return; }
+    x.beginPath(); x.moveTo(pts[0][0],pts[0][1]);
+    for(let i=1;i<pts.length-1;i++){ const mx=(pts[i][0]+pts[i+1][0])/2,my=(pts[i][1]+pts[i+1][1])/2; x.quadraticCurveTo(pts[i][0],pts[i][1],mx,my); }
+    const l=pts[pts.length-1]; x.lineTo(l[0],l[1]); x.stroke(); });
+  return c.toDataURL('image/png');
+}
+function validSt(st){
+  if(!st||typeof st!=='object'||!Array.isArray(st.d)) return false;
+  if(!(st.w>0&&st.w<=1200&&st.h>0&&st.h<=1200&&st.lw>0&&st.lw<10)) return false;
+  let n=0; for(const a of st.d){ if(!Array.isArray(a)) return false; for(const v of a){ if(!Number.isInteger(v)||Math.abs(v)>2000) return false; } n+=a.length; }
+  return n>0&&n<60000;
+}
+$('#btn-import').onclick=()=>{ $('#i-code').value=''; $('#imodal').hidden=false; $('#i-code').focus(); };
+$('#i-close').onclick=()=>{$('#imodal').hidden=true;};
+$('#i-pdf').onclick=()=>$('#imp').click();
+$('#i-ok').onclick=async()=>{
+  try{ const raw=$('#i-code').value; const p=(await unpackCode3(raw))||(await unpackCode(raw)); if(!p){ toast('找不到回傳碼，請確認有完整貼上「LB3」開頭到最後句點的那段文字'); return; }
+    importPayload(p); $('#imodal').hidden=true; }
+  catch(e){ console.warn(e); toast('回傳碼不完整或已損壞，請請助理重新複製一次'); }
+};
+let pdfFile=null,pdfUrl=null;
+function offerPdf(name,blob){
+  if(pdfUrl) URL.revokeObjectURL(pdfUrl);
+  pdfFile=new File([blob],name,{type:'application/pdf'}); pdfUrl=URL.createObjectURL(blob);
+  let canShare=false; try{ canShare=!!(navigator.canShare&&navigator.canShare({files:[pdfFile]})); }catch(e){}
+  $('#p-share').hidden=!canShare; $('#p-name').textContent=name; $('#pmodal').hidden=false;
+}
+$('#p-share').onclick=()=>{ navigator.share({files:[pdfFile],title:pdfFile.name}).then(()=>{ $('#pmodal').hidden=true; toast('已送出'); }).catch(e=>{ if(e&&e.name!=='AbortError') toast('無法分享，請改按「下載 PDF」'); }); };
+$('#p-dl').onclick=()=>{ const a=document.createElement('a'); a.href=pdfUrl; a.download=pdfFile.name; document.body.appendChild(a); a.click(); a.remove(); toast('已下載：'+pdfFile.name); };
+$('#p-code').onclick=()=>{ $('#pmodal').hidden=true; const s=cur(); if(s) openReturn(s); };
+$('#p-close').onclick=()=>{ $('#pmodal').hidden=true; };
+function b64(str){ const by=new TextEncoder().encode(str); let bin=''; for(let i=0;i<by.length;i+=0x8000) bin+=String.fromCharCode.apply(null,by.subarray(i,i+0x8000)); return btoa(bin); }
+const strObj=(o,keys)=>{ const r={}; keys.forEach(k=>{ const v=o&&o[k]; r[k]= v==null?'':(typeof v==='object'?'':v); }); return r; };
+function importPayload(p){
+  const src=p&&p.slip; if(!src||src.kind!=='slip'||typeof src.id!=='string'||!/^[A-Za-z0-9_\-]{1,60}$/.test(src.id)) throw new Error('bad');
+  const base=blankSlip(); const exist=state.slips.find(x=>x.id===src.id);
+  const s=Object.assign(base,{id:src.id,no:String(src.no||base.no),created:+src.created||Date.now(),updated:Date.now(),imported:true,
+    status: src.status==='paid'?'signed':(STATUS[src.status]?src.status:'draft'), note:String(src.note||'')});
+  s.payer=Object.assign(base.payer,strObj(src.payer,['name','taxId','contact','phone']));
+  s.payee=Object.assign(base.payee,strObj(src.payee,['name','idNo','phone','email','address','resident']));
+  s.bank=Object.assign(base.bank,strObj(src.bank,['bank','branch','account','holder']));
+  s.job=Object.assign(base.job,strObj(src.job,['date','title','from','to','cat','bizCode','desc','amount']),{nhiExempt:!!(src.job&&src.job.nhiExempt),manual:false,manualTax:'',manualNhi:''});
+  if(!CATS[s.job.cat]) s.job.cat='9A'; if(s.payee.resident!=='non') s.payee.resident='res';
+  const sg=src.sign, at=String((sg&&sg.at)||new Date().toISOString());
+  if(sg&&validSt(sg.st)) s.sign={img:strokesPng(sg.st),st:sg.st,at};
+  else if(sg&&typeof sg.img==='string'&&/^data:image\/png;base64,[A-Za-z0-9+\/=]+$/.test(sg.img)) s.sign={img:sg.img,at};
+  else s.sign=null;
+  if(s.sign&&s.status==='draft') s.status='signed';
+  if(exist){ s._o=exist._o; state.slips[state.slips.indexOf(exist)]=s; }
+  else { if(state.slips.some(x=>x.no===s.no)) s.no=nextNo(); state.slips.push(s); }
+  const att=(p.att&&typeof p.att==='object')?p.att:{}; state.att[s.id]=state.att[s.id]||{};
+  ['front','back','book'].forEach(k=>{ const v=att[k]; if(typeof v==='string'&&/^data:image\/(jpeg|png);base64,[A-Za-z0-9+\/=]+$/.test(v)&&v.length<260000){ state.att[s.id][k]=v; saveAtt(s,k); } });
+  saveSlip(s,0); select(s.id);
+  toast((exist?'已更新：':'已匯入：')+(s.payee.name||'未填姓名')+'，請核對金額與資料');
+}
+$('#imp').addEventListener('change',async e=>{
+  const f=e.target.files&&e.target.files[0]; e.target.value=''; if(!f) return;
+  try{
+    const txt=new TextDecoder('latin1').decode(await f.arrayBuffer());
+    const m=txt.match(/LAOBAO1:([A-Za-z0-9+\/=]+)/);
+    if(!m){ toast('這個 PDF 不是從本工具匯出的，無法匯入'); return; }
+    const bin=atob(m[1]); const by=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) by[i]=bin.charCodeAt(i);
+    importPayload(JSON.parse(new TextDecoder().decode(by))); $('#imodal').hidden=true;
+  }catch(err){ console.warn(err); toast('讀取失敗，請確認收到的是完整的 PDF'); }
+});
+
+/* ---------- 簽名 ---------- */
+const padc=$('#padc'); const pctx=padc.getContext('2d'); let drawing=false,last=null,inked=false,strokes=[],curS=null;
+function padResize(){ const r=padc.getBoundingClientRect(),dpr=window.devicePixelRatio||1; padc.width=Math.round(r.width*dpr); padc.height=Math.round(r.height*dpr);
+  pctx.setTransform(dpr,0,0,dpr,0,0); pctx.lineCap='round'; pctx.lineJoin='round'; pctx.strokeStyle='#14213d'; pctx.lineWidth=2.8; inked=false; strokes=[]; $('#pad-ph').hidden=false; }
+const pos=e=>{const r=padc.getBoundingClientRect(); return {x:e.clientX-r.left,y:e.clientY-r.top};};
+padc.addEventListener('pointerdown',e=>{e.preventDefault(); padc.setPointerCapture(e.pointerId); drawing=true; last=pos(e); curS=[[last.x,last.y]]; strokes.push(curS); pctx.beginPath(); pctx.arc(last.x,last.y,1.3,0,7); pctx.fillStyle='#14213d'; pctx.fill(); inked=true; $('#pad-ph').hidden=true;});
+padc.addEventListener('pointermove',e=>{ if(!drawing) return; const p=pos(e); const m={x:(last.x+p.x)/2,y:(last.y+p.y)/2};
+  pctx.beginPath(); pctx.moveTo(last.x,last.y); pctx.quadraticCurveTo(last.x,last.y,m.x,m.y); pctx.lineTo(p.x,p.y); pctx.stroke(); last=p; curS&&curS.push([p.x,p.y]); });
+['pointerup','pointercancel','pointerleave'].forEach(t=>padc.addEventListener(t,()=>{drawing=false;}));
+function packStrokes(){
+  let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9; strokes.forEach(a=>a.forEach(([x,y])=>{ if(x<x0)x0=x; if(y<y0)y0=y; if(x>x1)x1=x; if(y>y1)y1=y; }));
+  if(x1<x0) return null; const m=6; x0-=m; y0-=m; x1+=m; y1+=m;
+  const k=Math.min(1,600/(x1-x0)); const w=Math.max(1,Math.ceil((x1-x0)*k)), h=Math.max(1,Math.ceil((y1-y0)*k));
+  const d=strokes.map(a=>{ const out=[]; let lx=null,ly=null;
+    a.forEach(([x,y],i)=>{ const qx=Math.round((x-x0)*k), qy=Math.round((y-y0)*k);
+      if(lx!==null&&i<a.length-1&&Math.abs(qx-lx)+Math.abs(qy-ly)<2) return;
+      if(lx===null) out.push(qx,qy); else out.push(qx-lx,qy-ly); lx=qx; ly=qy; });
+    return out; });
+  return {w,h,lw:Math.max(1.2,+(2.8*k).toFixed(2)),d};
+}
+function openSign(){
+  const s=cur(); if(!s) return; const c=calc(s,state.settings.rates);
+  $('#m-facts').innerHTML=`<dt>所得人</dt><dd>${esc(s.payee.name||'（未填）')}</dd><dt>案件</dt><dd>${esc(s.job.title||'（未填）')}</dd>
+    <dt>應付金額</dt><dd class="num">${fmt(c.amt)} 元</dd><dt>代扣稅費</dt><dd class="num">${fmt(c.tax+c.nhi)} 元</dd><dt>實付金額</dt><dd class="num"><b>${fmt(c.net)} 元</b></dd>
+    <dt>匯入帳戶</dt><dd>${esc([s.bank.bank,s.bank.branch,s.bank.account].filter(Boolean).join(' ')||'（未填）')}</dd>`;
+  $('#m-decl').textContent='本人確認上列資料正確，確實提供上述勞務，並同意依法代扣所得稅及補充保費後，將實付金額匯入上列帳戶。';
+  $('#modal').hidden=false; requestAnimationFrame(padResize);
+}
+$('#m-clear').onclick=padResize;
+$('#m-cancel').onclick=()=>{$('#modal').hidden=true;};
+$('#m-ok').onclick=()=>{ const st=inked&&packStrokes(); if(!st){ toast('請先在框內簽名'); return; }
+  const s=cur(); s.sign={img:strokesPng(st),st,at:new Date().toISOString()}; if(s.status==='draft') s.status='signed';
+  $('#modal').hidden=true; touched(s); fillForm(); renderPreview(); toast('已完成簽名'); };
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') ['#modal','#rmodal','#imodal','#pmodal'].forEach(q=>$(q).hidden=true); });
+
+/* ---------- 其他 ---------- */
+let toastT=null;
+function toast(m){ const t=$('#toast'); t.textContent=m; t.hidden=false; clearTimeout(toastT); toastT=setTimeout(()=>t.hidden=true,2800); }
+function setTab(t){ $('#layout').dataset.tab=t; $('#tab-edit').setAttribute('aria-selected',t==='edit'); $('#tab-view').setAttribute('aria-selected',t==='view'); if(t==='view') requestAnimationFrame(fitPreview); }
+$('#tab-edit').onclick=()=>setTab('edit'); $('#tab-view').onclick=()=>setTab('view');
+function renderAll(){ renderList(); fillForm(); renderPreview(); }
+
+/* ---------- 啟動 ---------- */
+try{ if(/\bLine\//i.test(navigator.userAgent)) $('#inapp').hidden=false; }catch(e){}
+buildEditor();
+const ex=exampleSlip(); state.slips=[ex]; state.cur=ex.id; renderAll();
+function applyRole(){
+  const own=Store.isOwner, ext=!own&&Store.external;
+  document.body.dataset.role= own?'owner':ext?'external':'filler';
+  const r=$('#role'); r.hidden=!(Store.mode==='db'||ext);
+  r.textContent= own?'管理者・看得到全部': ext?'外部填寫・資料存在本機':'填單人・只看得到自己的單';
+  $('#btn-pdf').textContent= ext?'匯出 PDF 回傳':'匯出 PDF';
+  const g=$('#g-payer'); if(g) g.textContent=state.settings.payer.name||'給付單位';
+}
+async function loadData(){
+  setSync('idle','載入中…');
+  try{
+    const data=await Store.loadAll();
+    if(Store.isOwner && Store.mode==='db' && !data.slips.some(s=>s._o===Store.uid)){
+      const old=await Store.legacy();
+      for(const r of old.filter(r=>r.kind==='slip')){ r._o=Store.uid; data.slips.push(r); await Store.putSlip(r).catch(()=>{}); }
+      for(const a of old.filter(r=>r.kind==='att')){ data.att.push(a); await Store.putAtt({id:a.slip,_o:Store.uid},a.key,a.img).catch(()=>{}); }
+      const os=old.find(r=>r.kind==='settings'); if(os&&!data.config){ data.config=os; await Store.putConfig(os).catch(()=>{}); }
+    }
+    const set=data.config;
+    if(set){ const keepTo=state.settings.payer.name; state.settings.payer=Object.assign(clone(DEFAULT_PAYER),set.payer||{}); if(keepTo) state.settings.payer.name=keepTo; state.settings.rates=Object.assign(clone(DEFAULT_RATES),set.rates||{}); }
+    state.att={}; data.att.forEach(r=>{ (state.att[r.slip]=state.att[r.slip]||{})[r.key]=r.img; });
+    const editedEx=state.slips.find(s=>!s.example&&!data.slips.some(x=>x.id===s.id)&&!s._o);
+    if(data.slips.length){
+      state.slips=data.slips; if(editedEx) state.slips.push(editedEx);
+      if(!state.slips.some(s=>s.id===state.cur)) state.cur=state.slips.slice().sort((a,b)=>b.updated-a.updated)[0].id;
+    } else if(!Store.isOwner && !editedEx){
+      const n=blankSlip(); state.slips=[n]; state.cur=n.id;
+    }
+    applyRole(); renderAll(); setSync(Store.mode==='mem'?'error':'saved');
+  }catch(e){ console.warn(e); setSync('error','無法連線，請重新整理頁面'); }
+}
+Store.init().then(()=>{ applyRole(); return loadData(); });
+$('#btn-reload').onclick=()=>{ loadData().then(()=>toast('已更新')); };
+})();
+</script>
+
+</body>
+</html>
