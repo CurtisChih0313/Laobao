@@ -145,7 +145,11 @@ details.card[open]>summary{margin-bottom:12px}
 .modal .facts .num{font-family:var(--f-num);font-variant-numeric:tabular-nums}
 .modal .decl{font-size:13px;background:var(--surface-2);border-radius:8px;padding:10px 12px;margin:0}
 .pad{position:relative;height:230px;border:1px solid var(--line);border-radius:10px;background:var(--sh-bg);touch-action:none}
-.pad canvas{width:100%;height:100%;display:block;border-radius:10px;cursor:crosshair}
+.pad canvas{width:100%;height:100%;display:block;border-radius:10px;cursor:crosshair;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.pad{-webkit-user-select:none;user-select:none}
+.modal{overscroll-behavior:contain;touch-action:none}
+.modal .box{touch-action:pan-y}
+html.lock,html.lock body{overflow:hidden;overscroll-behavior:none}
 .pad .base{position:absolute;left:24px;right:24px;bottom:52px;border-bottom:1px solid #c9c9c9;pointer-events:none}
 .pad .ph{position:absolute;left:26px;bottom:58px;color:#9a9a9a;font-size:13px;pointer-events:none}
 .modal .row{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
@@ -888,6 +892,8 @@ padc.addEventListener('pointerdown',e=>{e.preventDefault(); padc.setPointerCaptu
 padc.addEventListener('pointermove',e=>{ if(!drawing) return; const p=pos(e); const m={x:(last.x+p.x)/2,y:(last.y+p.y)/2};
   pctx.beginPath(); pctx.moveTo(last.x,last.y); pctx.quadraticCurveTo(last.x,last.y,m.x,m.y); pctx.lineTo(p.x,p.y); pctx.stroke(); last=p; curS&&curS.push([p.x,p.y]); });
 ['pointerup','pointercancel','pointerleave'].forEach(t=>padc.addEventListener(t,()=>{drawing=false;}));
+['touchstart','touchmove','touchend'].forEach(t=>padc.addEventListener(t,e=>{ if(e.cancelable) e.preventDefault(); },{passive:false}));
+new MutationObserver(()=>document.documentElement.classList.toggle('lock',!$('#modal').hidden)).observe($('#modal'),{attributes:true,attributeFilter:['hidden']});
 function packStrokes(){
   let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9; strokes.forEach(a=>a.forEach(([x,y])=>{ if(x<x0)x0=x; if(y<y0)y0=y; if(x>x1)x1=x; if(y>y1)y1=y; }));
   if(x1<x0) return null; const m=6; x0-=m; y0-=m; x1+=m; y1+=m;
