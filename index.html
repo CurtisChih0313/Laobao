@@ -87,7 +87,7 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .f label{font-size:12px;color:var(--muted);font-weight:500}
 .f input,.f select,.f textarea{width:100%;border:1px solid var(--line);background:var(--surface-2);border-radius:7px;padding:7px 9px;min-width:0}
 .f textarea{min-height:64px;resize:vertical}
-.f input[type="number"]{font-family:var(--f-num);font-variant-numeric:tabular-nums}
+.f input[data-num],.f input[type="number"]{font-family:var(--f-num);font-variant-numeric:tabular-nums}
 .chk{display:flex;gap:8px;align-items:flex-start;font-size:13px;grid-column:1/-1;cursor:pointer}
 .chk input{margin-top:4px}
 .hint{font-size:12px;color:var(--muted);margin:6px 0 0}
@@ -496,7 +496,8 @@ function fieldHTML(f){
   let input;
   if(Array.isArray(t)) input=`<select ${attr}>${t.map(([v,l])=>`<option value="${esc(v)}">${esc(l)}</option>`).join('')}</select>`;
   else if(t==='textarea') input=`<textarea ${attr}></textarea>`;
-  else input=`<input ${attr} type="${t||'text'}"${t==='number'?' inputmode="numeric" min="0" step="1"':''} autocomplete="off">`;
+  else if(t==='number') input=`<input ${attr} type="text" inputmode="numeric" data-num="1" autocomplete="off" placeholder="0">`;
+  else input=`<input ${attr} type="${t||'text'}" autocomplete="off">`;
   return `<div class="${cls}"${flag==='manual'?' data-wrap="manual"':''}><label for="${id}">${esc(label)}</label>${input}</div>`;
 }
 function buildEditor(){
@@ -528,6 +529,7 @@ function buildEditor(){
 
   $('#editor').addEventListener('input',onInput);
   $('#editor').addEventListener('change',onInput);
+  ['keyup','compositionend','blur'].forEach(t=>$('#editor').addEventListener(t,e=>{ if(e.target.dataset&&e.target.dataset.num) onInput(e); },true));
   $('#btn-sign').onclick=openSign;
   $('#btn-unsign').onclick=()=>{const s=cur(); if(!s||!s.sign) return; s.sign=null; if(s.status==='signed') s.status='draft'; touched(s); fillForm();};
   $('#btn-resetrates').onclick=()=>{state.settings.rates=clone(DEFAULT_RATES); saveSettings(); fillForm(); renderAll();};
@@ -544,7 +546,9 @@ function onInput(e){
   if(el.dataset.r){ const v=parseFloat(el.value); state.settings.rates[el.dataset.r]=isNaN(v)?0:v; saveSettings(); renderCalc(); renderPreview(); return; }
   const k=el.dataset.k; if(!k) return;
   let v= el.type==='checkbox'?el.checked : el.value;
-  if(el.type==='number' && v!=='') v=+v;
+  if(el.dataset.num){ const d=String(v).replace(/[０-９]/g,c=>String.fromCharCode(c.charCodeAt(0)-0xFEE0)).replace(/[．。]/g,'.').replace(/[^\d.]/g,'');
+    v= d===''||isNaN(parseFloat(d)) ? '' : Math.round(parseFloat(d));
+    if(e.type==='change'||e.type==='blur') el.value= v===''?'':String(v); }
   if(getP(s,k)===v) return;
   setP(s,k,v);
   if(k==='job.manual') toggleManual();
