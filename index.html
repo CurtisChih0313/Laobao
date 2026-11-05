@@ -101,6 +101,10 @@ body:not([data-role="external"]) .ext-only{display:none!important}
 .share b{color:var(--ink);font-size:13px}
 .item .by{color:var(--info)}
 .inapp{margin:12px max(16px,env(safe-area-inset-right,0px)) 0 max(16px,env(safe-area-inset-left,0px));font-size:13px;background:var(--warn-soft);color:var(--warn);border-radius:8px;padding:9px 12px}
+.payer{display:grid;grid-template-columns:auto 1fr;gap:6px 16px;margin:0}
+.payer dt{color:var(--muted);font-size:12px;align-self:center}
+.payer dd{margin:0;font-weight:500;min-width:0;overflow-wrap:anywhere}
+.payer .num{font-family:var(--f-num);font-variant-numeric:tabular-nums}
 details.card>summary{cursor:pointer;font-size:13px;letter-spacing:.12em;color:var(--muted);font-weight:700;list-style:none;display:flex;justify-content:space-between}
 details.card>summary::after{content:"展開";font-weight:500;letter-spacing:0}
 details.card[open]>summary::after{content:"收合"}
@@ -358,15 +362,16 @@ function upper(n){
 
 /* ---------- 資料 ---------- */
 const DEFAULT_PAYER={name:'',taxId:'',contact:'',phone:''};
+const PAYER=Object.freeze({name:'皇宇影像有限公司',taxId:'94116855',contact:'盧禮綜',phone:'0983064326'});
 const state={slips:[],settings:{kind:'settings',payer:clone(DEFAULT_PAYER),rates:clone(DEFAULT_RATES)},att:{},cur:null,q:''};
 
 function blankSlip(base){
   const s={id:uid(),kind:'slip',no:nextNo(),created:Date.now(),updated:Date.now(),status:'draft',
-    payer:clone(state.settings.payer),
+    payer:clone(PAYER),
     payee:{name:'',idNo:'',phone:'',email:'',address:'',resident:'res'},
     job:{date:today(),title:'',from:today(),to:today(),cat:'9A',bizCode:'',desc:'',amount:'',nhiExempt:false,manual:false,manualTax:'',manualNhi:''},
     bank:{bank:'',branch:'',account:'',holder:''},note:'',sign:null};
-  if(base){ s.payee=clone(base.payee); s.bank=clone(base.bank); s.payer=clone(base.payer); s.job.cat=base.job.cat; s.job.bizCode=base.job.bizCode; s.job.nhiExempt=base.job.nhiExempt; }
+  if(base){ s.payee=clone(base.payee); s.bank=clone(base.bank); s.payer=clone(PAYER); s.job.cat=base.job.cat; s.job.bizCode=base.job.bizCode; s.job.nhiExempt=base.job.nhiExempt; }
   return s;
 }
 function nextNo(){
@@ -376,7 +381,7 @@ function nextNo(){
 }
 function exampleSlip(){
   const s=blankSlip(); s.example=true; s.no='LR'+today().replace(/-/g,'')+'-範例';
-  s.payer={name:'光圈影像工作室',taxId:'12345678',contact:'林小姐',phone:'02-2700-0000'};
+  s.payer=clone(PAYER);
   s.payee={name:'王小明',idNo:'A123456789',phone:'0912-345-678',email:'xiaoming@example.com',address:'臺北市大安區復興南路一段 100 號 5 樓',resident:'res'};
   s.job.title='秋季型錄商品拍攝 攝影助理';s.job.cat='9A';s.job.bizCode='9A-76';s.job.desc='燈光架設、器材管理、現場協助，共 2 日。';s.job.amount=24000;
   s.bank={bank:'臺灣銀行',branch:'大安分行',account:'012-345-678901',holder:'王小明'};
@@ -501,6 +506,7 @@ function buildEditor(){
     <li>按「簽名」，在框內親手簽名。</li>
     <li>按右上角「匯出 PDF 回傳」，把 PDF 用 LINE 或 Email 傳給 <b id="g-payer">給付單位</b>。</li></ol>
     <p class="hint">資料只存在你這台裝置的瀏覽器。換裝置或清除瀏覽資料就會不見，請以傳出去的 PDF 為準。</p></div>`;
+  h+=`<div class="card"><h2><span>給付單位</span></h2><dl class="payer"><dt>單位名稱</dt><dd>${esc(PAYER.name)}</dd><dt>統一編號</dt><dd class="num">${esc(PAYER.taxId)}</dd><dt>承辦人</dt><dd>${esc(PAYER.contact)}</dd><dt>聯絡電話</dt><dd class="num">${esc(PAYER.phone)}</dd></dl></div>`;
   h+=SECTIONS.map(sec=>`<div class="card"><h2><span>${sec.title}</span>${sec.extra||''}</h2><div class="grid">${sec.fields.map(fieldHTML).join('')}</div>${sec.sum?'<div class="sum" id="sum"></div><div class="rule" id="rule"></div>':''}</div>`).join('');
   h+=`<div class="card"><h2><span>所得人簽名</span></h2>
     <div class="sig"><div class="sigbox" id="sigbox"></div>
@@ -514,9 +520,6 @@ function buildEditor(){
     <div class="row"><label class="btn sm" for="up-${k}">上傳</label><input type="file" accept="image/*" id="up-${k}" data-att="${k}"><button class="btn sm" data-rm="${k}">移除</button></div></div>`).join('')}</div>
     <p class="hint">附件會放在 PDF 第 2 頁。圖片會自動壓縮。</p></div>`;
   h+=`<div class="card"><div class="grid"><div class="f wide"><label for="f-note">備註（會印在單據上）</label><textarea id="f-note" data-k="note"></textarea></div></div></div>`;
-  h+=`<details class="card owner-only"><summary>給付單位（本單）</summary><div class="grid">
-    ${[['payer.name','單位名稱'],['payer.taxId','統一編號'],['payer.contact','承辦人'],['payer.phone','聯絡電話']].map(fieldHTML).join('')}
-    </div><p class="hint"><button class="btn sm" id="btn-defpayer">設為之後新單的預設</button></p></details>`;
   h+=`<details class="card owner-only"><summary>扣繳設定（115 年度預設）</summary><div class="grid">
     ${[['nhiRate','補充保費費率 %'],['nhiMinBiz','9A／9B 補充保費門檻（達）'],['nhiMinWage','兼職薪資補充保費門檻（達，基本工資）'],['taxBiz','9A／9B 扣繳率 %'],['taxBizOver','9A／9B 扣繳門檻（超過）'],['taxWage','兼職薪資扣繳率 %'],['taxWageMin','兼職薪資扣繳門檻（達）'],['nrBiz','非居住者 9A／9B 扣繳率 %'],['nrRoyaltyOver','非居住者稿費門檻（超過）'],['nrWage','非居住者薪資扣繳率 %（低）'],['nrWageHigh','非居住者薪資扣繳率 %（高）'],['nrWageSplit','非居住者薪資分界金額']]
       .map(([k,l])=>`<div class="f"><label for="r-${k}">${l}</label><input type="number" step="any" id="r-${k}" data-r="${k}"></div>`).join('')}
@@ -527,7 +530,6 @@ function buildEditor(){
   $('#editor').addEventListener('change',onInput);
   $('#btn-sign').onclick=openSign;
   $('#btn-unsign').onclick=()=>{const s=cur(); if(!s||!s.sign) return; s.sign=null; if(s.status==='signed') s.status='draft'; touched(s); fillForm();};
-  $('#btn-defpayer').onclick=()=>{const s=cur(); state.settings.payer=clone(s.payer); saveSettings(); toast('已設為預設給付單位');};
   $('#btn-resetrates').onclick=()=>{state.settings.rates=clone(DEFAULT_RATES); saveSettings(); fillForm(); renderAll();};
   $('#editor').querySelectorAll('[data-rm]').forEach(b=>b.onclick=()=>{const s=cur(); const a=state.att[s.id]; if(a&&a[b.dataset.rm]){delete a[b.dataset.rm]; saveAtt(s,b.dataset.rm); fillAtt(); renderPreview();}});
   $('#from-past').addEventListener('change',e=>{
@@ -640,12 +642,12 @@ function sheetHTML(s){
   const td=(v,cls)=>`<td${cls?` class="${cls}"`:''}>${esc(v)}</td>`;
   const page1=`<div class="sheet" style="position:relative">
     ${s.example?'<div class="exmark">範例資料</div>':''}
-    <div class="hd"><div><div class="org">${esc(s.payer.name||'（給付單位）')}</div><h2 class="ttl">勞務報酬單</h2></div>
+    <div class="hd"><div><div class="org">${esc(PAYER.name)}</div><h2 class="ttl">勞務報酬單</h2></div>
       <table class="meta"><tr><th>單號</th><td>${esc(s.no)}</td></tr><tr><th>填單日期</th><td>${esc(s.job.date)}</td></tr><tr><th>狀態</th><td>${STATUS[s.status]}</td></tr></table></div>
     <table class="t"><colgroup><col style="width:96px"><col><col style="width:96px"><col></colgroup>
       <tr class="sec"><th colspan="4">給付單位</th></tr>
-      <tr><th>單位名稱</th>${td(s.payer.name)}<th>統一編號</th>${td(s.payer.taxId,'n')}</tr>
-      <tr><th>承辦人</th>${td(s.payer.contact)}<th>聯絡電話</th>${td(s.payer.phone,'n')}</tr>
+      <tr><th>單位名稱</th>${td(PAYER.name)}<th>統一編號</th>${td(PAYER.taxId,'n')}</tr>
+      <tr><th>承辦人</th>${td(PAYER.contact)}<th>聯絡電話</th>${td(PAYER.phone,'n')}</tr>
       <tr class="sec"><th colspan="4">所得人</th></tr>
       <tr><th>姓名</th>${td(s.payee.name)}<th>身分證字號</th>${td(s.payee.idNo,'n')}</tr>
       <tr><th>電話</th>${td(s.payee.phone,'n')}<th>Email</th>${td(s.payee.email)}</tr>
@@ -679,7 +681,7 @@ function sheetHTML(s){
   if(!imgs.length) return [page1];
   const page2=`<div class="sheet"><div class="hd"><div><div class="org">${esc(s.payee.name)}・${esc(s.no)}</div><h2 class="ttl" style="font-size:24px">附件</h2></div></div>
     <div class="atts">${imgs.map(([k,l],i)=>`<figure${k==='book'?' class="full"':''}><img src="${a[k]}" alt=""><figcaption>${l}</figcaption></figure>`).join('')}</div>
-    <p class="decl" style="margin-top:auto">本附件僅供 ${esc(s.payer.name||'給付單位')} 辦理勞務報酬給付及扣繳申報使用。</p>
+    <p class="decl" style="margin-top:auto">本附件僅供 ${esc(PAYER.name)} 辦理勞務報酬給付及扣繳申報使用。</p>
     <div class="foot"><span>${esc(s.no)}</span><span>第 2 頁</span></div></div>`;
   return [page1,page2];
 }
@@ -791,7 +793,7 @@ async function unpackCode3(text){
   return {v:1,slip};
 }
 async function openReturn(s){
-  $('#r-payer').textContent=s.payer.name||state.settings.payer.name||'給付單位';
+  $('#r-payer').textContent=PAYER.name;
   const sign= s.sign&&s.sign.st ? {at:s.sign.at,st:s.sign.st} : null;
   $('#r-warn').hidden=!(s.sign&&!s.sign.st);
   $('#r-code').value='產生中…'; $('#r-img').textContent='產生中…'; $('#rmodal').hidden=false;
@@ -855,7 +857,7 @@ function importPayload(p){
   const base=blankSlip(); const exist=state.slips.find(x=>x.id===src.id);
   const s=Object.assign(base,{id:src.id,no:String(src.no||base.no),created:+src.created||Date.now(),updated:Date.now(),imported:true,
     status: src.status==='paid'?'signed':(STATUS[src.status]?src.status:'draft'), note:String(src.note||'')});
-  s.payer=Object.assign(base.payer,strObj(src.payer,['name','taxId','contact','phone']));
+  s.payer=clone(PAYER);
   s.payee=Object.assign(base.payee,strObj(src.payee,['name','idNo','phone','email','address','resident']));
   s.bank=Object.assign(base.bank,strObj(src.bank,['bank','branch','account','holder']));
   s.job=Object.assign(base.job,strObj(src.job,['date','title','from','to','cat','bizCode','desc','amount']),{nhiExempt:!!(src.job&&src.job.nhiExempt),manual:false,manualTax:'',manualNhi:''});
@@ -937,7 +939,7 @@ function applyRole(){
   const r=$('#role'); r.hidden=!(Store.mode==='db'||ext);
   r.textContent= own?'管理者・看得到全部': ext?'外部填寫・資料存在本機':'填單人・只看得到自己的單';
   $('#btn-pdf').textContent= ext?'匯出 PDF 回傳':'匯出 PDF';
-  const g=$('#g-payer'); if(g) g.textContent=state.settings.payer.name||'給付單位';
+  const g=$('#g-payer'); if(g) g.textContent=PAYER.name;
 }
 async function loadData(){
   setSync('idle','載入中…');
